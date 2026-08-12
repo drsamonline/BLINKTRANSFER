@@ -1,11 +1,12 @@
 // LT Code (Fountain Code) Encoder using Robust Soliton Distribution
-const QR_PAYLOAD_MAX = 2953;
-const QR_HEADER_SIZE = 17; // 1 + 8 + 4 + 4
-const SYMBOL_DATA_SIZE = QR_PAYLOAD_MAX - QR_HEADER_SIZE; // 2936 bytes
+const QR_PAYLOAD_MAX = 1600;
+const QR_HEADER_SIZE = 25; // 1 + 16 + 4 + 4
+const SYMBOL_DATA_SIZE = 1500; // Reduced for reliable scanning
 
 class LTEncoder {
-  constructor(data, symbolSize = SYMBOL_DATA_SIZE) {
+  constructor(data, uuid, symbolSize = SYMBOL_DATA_SIZE) {
     this.data = data; // Uint8Array
+    this.uuid = uuid;
     this.symbolSize = symbolSize;
     this.totalSymbols = Math.ceil(data.length / symbolSize);
     this.sourceBlocks = this.splitIntoBlocks();
@@ -155,10 +156,10 @@ class LTEncoder {
 let encoder = null;
 
 self.onmessage = function(e) {
-  const { type, data, uuid, totalSymbols } = e.data;
+  const { type, data, uuid } = e.data;
 
   if (type === 'init') {
-    encoder = new LTEncoder(data);
+    encoder = new LTEncoder(data, uuid);
     self.postMessage({ 
       type: 'initialized', 
       totalSymbols: encoder.getTotalSymbols(),

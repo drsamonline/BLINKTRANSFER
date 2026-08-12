@@ -1,5 +1,5 @@
 // LT Code Decoder using Belief Propagation
-const SYMBOL_DATA_SIZE = 2936;
+const SYMBOL_DATA_SIZE = 1500; // Reduced from 2936 for reliable scanning
 
 class LTDecoder {
   constructor(totalSymbols, symbolSize = SYMBOL_DATA_SIZE) {
@@ -15,7 +15,8 @@ class LTDecoder {
   }
 
   addSymbol(symbolIndex, packet) {
-    if (this.sourceBlocks[symbolIndex % this.k] !== null) {
+    const sourceIdx = symbolIndex % this.k;
+    if (this.sourceBlocks[sourceIdx] !== null) {
       return false; // Already recovered
     }
 

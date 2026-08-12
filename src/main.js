@@ -36,10 +36,11 @@ const downloadFileBtn = document.getElementById('downloadFileBtn');
 const closeDownloadModalBtn = document.getElementById('closeDownloadModalBtn');
 
 // Constants
-const QR_PAYLOAD_MAX = 2953;
-const QR_HEADER_SIZE = 17;
-const SYMBOL_DATA_SIZE = QR_PAYLOAD_MAX - QR_HEADER_SIZE;
+const QR_PAYLOAD_MAX = 1600; // Reduced for reliable scanning
+const QR_HEADER_SIZE = 26; // 1 + 16 + 4 + 4 + 1 (version + uuid + k + symbolIndex + crc)
+const SYMBOL_DATA_SIZE = 1500; // Payload minus header overhead
 const FPS = 20;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB max recommended file size
 
 // State
 let currentFile = null;
@@ -54,7 +55,6 @@ let wakeLock = null;
 let stream = null;
 let animationFrameCount = 0;
 let receivedFileBlob = null;
-let transferMetadata = null;
 
 // Utility functions
 function showToast(message, type = 'success') {
@@ -292,7 +292,8 @@ function renderQRCode(qr, canvas) {
   }
 }
 
-// Create QR payload
+// Create QR payload with improved structure
+// Header: [1 byte version][16 bytes UUID][4 bytes k][4 bytes symbolIndex][2 bytes CRC]
 function createQRPayload(uuid, totalSymbols, symbolIndex, packetData) {
   const payload = new Uint8Array(QR_PAYLOAD_MAX);
   const view = new DataView(payload.buffer);
@@ -300,18 +301,25 @@ function createQRPayload(uuid, totalSymbols, symbolIndex, packetData) {
   // Header version (1 byte)
   payload[0] = 0x01;
   
-  // UUID (8 bytes) - use first 8 bytes of UUID
-  const uuidBytes = new TextEncoder().encode(uuid.slice(0, 8));
-  payload.set(uuidBytes, 1);
+  // UUID (16 bytes) - full UUID
+  const uuidBytes = new TextEncoder().encode(uuid);
+  payload.set(uuidBytes.slice(0, 16), 1);
   
   // Total symbols (4 bytes, big-endian)
-  view.setUint32(9, totalSymbols, false);
+  view.setUint32(17, totalSymbols, false);
   
   // Symbol index (4 bytes, big-endian)
-  view.setUint32(13, symbolIndex, false);
+  view.setUint32(21, symbolIndex, false);
   
-  // Packet data
-  payload.set(packetData, 17);
+  // Packet data starts at offset 25
+  const dataOffset = 25;
+  const availableSpace = QR_PAYLOAD_MAX - dataOffset - 2; // Reserve 2 bytes for CRC
+  const dataLength = Math.min(packetData.length, availableSpace);
+  payload.set(packetData.slice(0, dataLength), dataOffset);
+  
+  // Calculate CRC16 for error detection
+  const crc = calculateCRC16(payload.slice(0, dataOffset + dataLength));
+  view.setUint16(dataOffset + dataLength, crc, false);
   
   // Convert to string for QR encoding
   let binary = '';
@@ -320,6 +328,25 @@ function createQRPayload(uuid, totalSymbols, symbolIndex, packetData) {
   }
   
   return btoa(binary);
+}
+
+// CRC16 calculation for error detection
+function calculateCRC16(data) {
+  let crc = 0xFFFF;
+  const polynomial = 0x1021;
+  
+  for (let i = 0; i < data.length; i++) {
+    crc ^= (data[i] << 8);
+    for (let j = 0; j < 8; j++) {
+      if ((crc & 0x8000) !== 0) {
+        crc = ((crc << 1) ^ polynomial) & 0xFFFF;
+      } else {
+        crc = (crc << 1) & 0xFFFF;
+      }
+    }
+  }
+  
+  return crc;
 }
 
 function parseQRPayload(base64Data) {
@@ -331,7 +358,8 @@ function parseQRPayload(base64Data) {
       payload[i] = binary.charCodeAt(i);
     }
     
-    if (payload.length < QR_HEADER_SIZE) {
+    // Minimum payload size check
+    if (payload.length < 27) { // version(1) + uuid(16) + k(4) + symbolIndex(4) + crc(2)
       return null;
     }
     
@@ -340,14 +368,31 @@ function parseQRPayload(base64Data) {
       return null;
     }
     
-    const uuidBytes = payload.slice(1, 9);
-    const uuid = new TextDecoder().decode(uuidBytes).replace(/\0/g, '');
+    // Parse UUID (16 bytes)
+    const uuidBytes = payload.slice(1, 17);
+    let uuidHex = '';
+    for (let i = 0; i < 16; i++) {
+      const hex = uuidBytes[i].toString(16).padStart(2, '0');
+      if (i === 3 || i === 5 || i === 7 || i === 9) uuidHex += '-';
+      uuidHex += hex;
+    }
+    const uuid = uuidHex;
     
     const view = new DataView(payload.buffer);
-    const totalSymbols = view.getUint32(9, false);
-    const symbolIndex = view.getUint32(13, false);
+    const totalSymbols = view.getUint32(17, false);
+    const symbolIndex = view.getUint32(21, false);
     
-    const packetData = payload.slice(17);
+    // Verify CRC
+    const dataOffset = 25;
+    const receivedCRC = view.getUint16(QR_PAYLOAD_MAX - 2, false);
+    const calculatedCRC = calculateCRC16(payload.slice(0, QR_PAYLOAD_MAX - 2));
+    
+    if (receivedCRC !== calculatedCRC) {
+      console.warn('CRC mismatch, packet may be corrupted');
+      // Still try to process but with lower confidence
+    }
+    
+    const packetData = payload.slice(dataOffset, QR_PAYLOAD_MAX - 2);
     
     return { uuid, totalSymbols, symbolIndex, packetData };
   } catch (e) {
@@ -364,6 +409,13 @@ sendBtn.addEventListener('click', () => {
 fileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  
+  // Check file size limit
+  if (file.size > MAX_FILE_SIZE) {
+    showToast(`File too large! Max recommended size is ${formatBytes(MAX_FILE_SIZE)}`, 'error');
+    fileInput.value = '';
+    return;
+  }
   
   currentFile = file;
   
@@ -443,43 +495,79 @@ function showStaticQR(data) {
   
   requestWakeLock();
 }
-
 async function startAnimatedTransfer(data) {
   const uuid = generateUUID();
   const totalSymbols = Math.ceil(data.length / SYMBOL_DATA_SIZE);
-  
+
   // Initialize encoder worker
   encoderWorker = new Worker('/src/workers/encoder-worker.js');
-  
+
   encoderWorker.onmessage = (e) => {
     if (e.data.type === 'initialized') {
-      // Show header QR first
-      showHeaderQR(uuid, totalSymbols);
+      // Show focus assist pattern first
+      showFocusAssist();
       
-      // After 2 seconds, start animated transfer
+      // After 2 seconds of focus assist, show header QR
       setTimeout(() => {
-        startQRAnimation(uuid, totalSymbols);
+        showHeaderQR(uuid, totalSymbols);
+        
+        // After 2 seconds of header QR, start animated transfer
+        setTimeout(() => {
+          startQRAnimation(uuid, totalSymbols);
+        }, 2000);
       }, 2000);
     } else if (e.data.type === 'symbol') {
       // Render this symbol
       renderSymbolQR(uuid, totalSymbols, e.data.symbolIndex, e.data.packet);
     }
   };
-  
+
   encoderWorker.postMessage({
     type: 'init',
     data: data,
     uuid: uuid
   });
-  
+
   qrScreen.classList.add('active');
   qrCanvas.width = 800;
   qrCanvas.height = 800;
-  
-  document.getElementById('qrTitle').textContent = 'Transferring...';
-  document.getElementById('qrSubtitle').textContent = `${totalSymbols} symbols • Keep screen visible`;
-  
+
   requestWakeLock();
+}
+
+// Focus assist pattern to help camera adjust exposure and focus
+function showFocusAssist() {
+  const ctx = qrCanvas.getContext('2d');
+  let phase = 0;
+  let count = 0;
+  const maxCount = 40; // 2 seconds at 20fps
+  
+  function animate() {
+    if (count >= maxCount) return;
+    
+    phase = !phase;
+    ctx.fillStyle = phase ? '#000000' : '#FFFFFF';
+    ctx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
+    
+    // Draw checkerboard pattern
+    const squareSize = 50;
+    ctx.fillStyle = phase ? '#FFFFFF' : '#000000';
+    for (let row = 0; row < qrCanvas.height / squareSize; row++) {
+      for (let col = 0; col < qrCanvas.width / squareSize; col++) {
+        if ((row + col) % 2 === 0) {
+          ctx.fillRect(col * squareSize, row * squareSize, squareSize, squareSize);
+        }
+      }
+    }
+    
+    count++;
+    document.getElementById('qrTitle').textContent = `Focusing ${count}/${maxCount}`;
+    document.getElementById('qrSubtitle').textContent = 'Helping camera adjust...';
+    
+    setTimeout(animate, 1000 / FPS);
+  }
+  
+  animate();
 }
 
 function showHeaderQR(uuid, totalSymbols) {
@@ -571,6 +659,8 @@ let headerReceived = false;
 let currentTransferUUID = null;
 let expectedTotalSymbols = 0;
 let receivedSymbols = new Map();
+let transferMetadata = null; // Store file metadata from header
+let estimatedTransferTime = 0; // Estimated time in seconds
 
 async function startCameraScanning() {
   scannerRunning = true;
@@ -588,13 +678,8 @@ async function startCameraScanning() {
 function scanFrame() {
   if (!scannerRunning) return;
   
-  const now = Date.now();
-  if (now - lastDecodeTime < 100) {
-    requestAnimationFrame(scanFrame);
-    return;
-  }
-  
-  lastDecodeTime = now;
+  // Removed throttle - let jsQR run as fast as possible
+  lastDecodeTime = Date.now();
   
   // Draw video frame to canvas for processing
   const tempCanvas = document.createElement('canvas');
@@ -630,6 +715,14 @@ function handleDecodedQR(e) {
         currentTransferUUID = header.uuid;
         expectedTotalSymbols = header.k;
         
+        // Store metadata for later use
+        transferMetadata = {
+          fileName: header.origName || 'received_file',
+          fileType: header.origType || 'application/octet-stream',
+          size: header.size,
+          compressionMode: header.mode
+        };
+        
         // Initialize LT decoder
         ltDecoderWorker = new Worker('/src/workers/lt-decoder-worker.js');
         
@@ -646,6 +739,13 @@ function handleDecodedQR(e) {
         
         progressContainer.style.display = 'block';
         updateProgress(0, header.k);
+        
+        // Calculate and show estimated transfer time
+        estimatedTransferTime = Math.ceil(header.k / FPS);
+        const mins = Math.floor(estimatedTransferTime / 60);
+        const secs = estimatedTransferTime % 60;
+        const timeEstimate = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+        document.getElementById('qrSubtitle').textContent = `~${timeEstimate} remaining`;
         
         showToast('Header received! Scanning data...', 'success');
       }
@@ -697,15 +797,15 @@ async function handleTransferComplete(arrayBuffer) {
   }
   cameraScreen.classList.remove('active');
   
-  // Get metadata from transfer
-  const fileName = currentFile?.name || 'received_file';
-  const fileType = currentFile?.type || 'application/octet-stream';
+  // Get metadata from transfer (stored when header was received)
+  const fileName = transferMetadata?.fileName || 'received_file';
+  const fileType = transferMetadata?.fileType || 'application/octet-stream';
+  const actualSize = transferMetadata?.size || arrayBuffer.byteLength;
   
   // Decompress if needed
   let finalData = new Uint8Array(arrayBuffer);
   
   // Trim to actual size (remove padding)
-  const actualSize = compressedData?.length || transferMetadata?.size || arrayBuffer.byteLength;
   finalData = finalData.slice(0, actualSize);
   
   // Store for download
@@ -779,6 +879,7 @@ function stopReceiving() {
   cameraScreen.classList.remove('active');
   headerReceived = false;
   receivedSymbols.clear();
+  transferMetadata = null; // Clear metadata
 }
 
 // Wake Lock API
