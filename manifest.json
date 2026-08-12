@@ -22,5 +22,5 @@
     }
   ],
   "categories": ["utilities", "productivity"],
-  "permissions": ["camera", "storage"]
+  "permissions": ["camera"]
 }
