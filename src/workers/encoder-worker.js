@@ -1,150 +1,86 @@
 // LT Code (Fountain Code) Encoder using Robust Soliton Distribution
-const QR_PAYLOAD_MAX = 1600;
-const QR_HEADER_SIZE = 25; // 1 + 16 + 4 + 4
-const SYMBOL_DATA_SIZE = 1500; // Reduced for reliable scanning
+import { 
+  SYMBOL_DATA_SIZE, 
+  HEADER_SIZE, 
+  calculateCRC16, 
+  createDegreeGenerator, 
+  selectDistinctIndices 
+} from '../lib/utils.js';
+
+const QR_HEADER_VERSION = 0x01;
 
 class LTEncoder {
-  constructor(data, uuid, symbolSize = SYMBOL_DATA_SIZE) {
+  constructor(data, uuidBytes, symbolSize = SYMBOL_DATA_SIZE) {
     this.data = data; // Uint8Array
-    this.uuid = uuid;
+    this.uuidBytes = uuidBytes; // Uint8Array(16)
     this.symbolSize = symbolSize;
     this.totalSymbols = Math.ceil(data.length / symbolSize);
     this.sourceBlocks = this.splitIntoBlocks();
     this.counter = 0;
     
-    // Robust Soliton Distribution parameters
-    this.c = 0.1; // Constant for RSD
-    this.delta = 0.01; // Failure probability
-    this.R = this.computeR();
+    // Pre-compute degree generator for Robust Soliton
+    this.getDegree = createDegreeGenerator(this.totalSymbols);
   }
 
   splitIntoBlocks() {
     const blocks = [];
-    for (let i = 0; i < this.totalSymbols; i++) {
+    const k = this.totalSymbols;
+    for (let i = 0; i < k; i++) {
       const start = i * this.symbolSize;
       const end = Math.min(start + this.symbolSize, this.data.length);
       const block = new Uint8Array(this.symbolSize);
-      block.set(this.data.slice(start, end));
+      if (end > start) {
+        block.set(this.data.slice(start, end));
+      }
       blocks.push(block);
     }
     return blocks;
   }
 
-  computeR() {
-    const k = this.totalSymbols;
-    const sumTau = this.computeSumTau(k);
-    return Math.ceil(this.c * Math.sqrt(k) * Math.log(k / this.delta) / sumTau);
-  }
-
-  computeSumTau(k) {
-    let sum = 0;
-    for (let d = 1; d <= k; d++) {
-      sum += 1 / d;
-    }
-    return sum;
-  }
-
-  // Robust Soliton Distribution
-  getDegree() {
-    const k = this.totalSymbols;
-    const random = this.seededRandom(this.counter);
-    
-    // Compute ideal soliton distribution
-    const rho = new Array(k + 1).fill(0);
-    rho[1] = 1 / k;
-    for (let d = 2; d <= k; d++) {
-      rho[d] = 1 / (d * (d - 1));
-    }
-
-    // Compute tau
-    const tau = new Array(k + 1).fill(0);
-    const sumTau = this.computeSumTau(k);
-    for (let d = 1; d < this.R; d++) {
-      tau[d] = this.R / (d * k);
-    }
-    tau[this.R] = this.R * Math.log(this.R / this.delta) / k;
-
-    // Combine rho and tau
-    const mu = new Array(k + 1).fill(0);
-    for (let d = 1; d <= k; d++) {
-      mu[d] = (rho[d] + tau[d]) / (this.computeSumTau(k) / k + this.R / k * Math.log(this.R / this.delta));
-    }
-
-    // Normalize
-    let sum = 0;
-    for (let d = 1; d <= k; d++) {
-      sum += mu[d];
-    }
-    for (let d = 1; d <= k; d++) {
-      mu[d] /= sum;
-    }
-
-    // Cumulative distribution
-    const cumulative = new Array(k + 1).fill(0);
-    for (let d = 1; d <= k; d++) {
-      cumulative[d] = cumulative[d - 1] + mu[d];
-    }
-
-    // Sample degree
-    const r = random();
-    let degree = 1;
-    for (let d = 1; d <= k; d++) {
-      if (r <= cumulative[d]) {
-        degree = d;
-        break;
-      }
-    }
-
-    return Math.max(1, Math.min(k, degree));
-  }
-
-  seededRandom(seed) {
-    // Simple seeded PRNG (mulberry32)
-    return function() {
-      let t = seed += 0x6D2B79F5;
-      t = Math.imul(t ^ t >>> 15, t | 1);
-      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-  }
-
-  // Generate encoded symbol
+  // Generate encoded symbol with full header
   generateSymbol() {
     const k = this.totalSymbols;
-    const degree = this.getDegree();
+    const degree = this.getDegree(this.counter);
     
     // Select 'degree' distinct source block indices
-    const indices = this.selectIndices(degree, k);
+    const indices = selectDistinctIndices(this.counter, degree, k);
     
     // XOR the selected blocks
     const encoded = new Uint8Array(this.symbolSize);
     for (const idx of indices) {
+      const block = this.sourceBlocks[idx];
       for (let i = 0; i < this.symbolSize; i++) {
-        encoded[i] ^= this.sourceBlocks[idx][i];
+        encoded[i] ^= block[i];
       }
     }
 
-    // Create packet: [seed (4)][symbol_index (4)][data]
-    const packet = new Uint8Array(8 + this.symbolSize);
-    const view = new DataView(packet.buffer);
-    view.setUint32(0, this.counter, false); // seed (big-endian)
-    view.setUint32(4, this.counter, false); // symbol_index (big-endian)
-    packet.set(encoded, 8);
-
+    // Build QR payload: [ver(1)][uuid(16)][k(4)][idx(4)][data][crc(2)]
+    const payloadSize = HEADER_SIZE + this.symbolSize;
+    const payload = new Uint8Array(payloadSize);
+    const view = new DataView(payload.buffer);
+    
+    let offset = 0;
+    payload[offset++] = QR_HEADER_VERSION;                    // 1 byte version
+    payload.set(this.uuidBytes, offset);                      // 16 bytes UUID
+    offset += 16;
+    view.setUint32(offset, k, false);                         // 4 bytes k (big-endian)
+    offset += 4;
+    view.setUint32(offset, this.counter, false);              // 4 bytes symbol index
+    offset += 4;
+    payload.set(encoded, offset);                             // symbol data
+    offset += this.symbolSize;
+    
+    // Calculate CRC16 over everything except the last 2 bytes
+    const crc = calculateCRC16(payload.slice(0, offset));
+    view.setUint16(offset, crc, false);                       // 2 bytes CRC
+    
     this.counter++;
-    return { packet, degree, indices, symbolIndex: this.counter - 1 };
-  }
-
-  selectIndices(degree, k) {
-    const indices = new Set();
-    const random = this.seededRandom(this.counter);
     
-    while (indices.size < degree) {
-      const idx = Math.floor(random() * k);
-      indices.add(idx);
-    }
-    
-    return Array.from(indices);
+    return { 
+      payload, 
+      symbolIndex: this.counter - 1,
+      totalSymbols: k 
+    };
   }
 
   getTotalSymbols() {
@@ -159,11 +95,12 @@ self.onmessage = function(e) {
   const { type, data, uuid } = e.data;
 
   if (type === 'init') {
+    // uuid should be a Uint8Array of 16 bytes
     encoder = new LTEncoder(data, uuid);
     self.postMessage({ 
       type: 'initialized', 
       totalSymbols: encoder.getTotalSymbols(),
-      uuid: uuid
+      uuid: Array.from(uuid) // Send as array for main thread
     });
   } else if (type === 'generate') {
     if (!encoder) {
@@ -174,9 +111,9 @@ self.onmessage = function(e) {
     const symbol = encoder.generateSymbol();
     self.postMessage({ 
       type: 'symbol', 
-      packet: symbol.packet,
+      payload: symbol.payload,
       symbolIndex: symbol.symbolIndex,
-      totalSymbols: encoder.getTotalSymbols()
-    }, [symbol.packet.buffer]);
+      totalSymbols: symbol.totalSymbols
+    }, [symbol.payload.buffer]);
   }
 };

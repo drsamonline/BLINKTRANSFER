@@ -1,4 +1,13 @@
 // BlinkTransfer - Main Application Logic
+import { 
+  MAX_PAYLOAD_BYTES, 
+  HEADER_SIZE, 
+  SYMBOL_DATA_SIZE, 
+  FILE_SIZE_LIMIT,
+  calculateCRC16,
+  generateUUIDBytes,
+  uuidBytesToHex
+} from './lib/utils.js';
 
 // DOM Elements
 const sendBtn = document.getElementById('sendBtn');
@@ -36,16 +45,11 @@ const downloadFileBtn = document.getElementById('downloadFileBtn');
 const closeDownloadModalBtn = document.getElementById('closeDownloadModalBtn');
 
 // Constants
-const QR_PAYLOAD_MAX = 1600; // Reduced for reliable scanning
-const QR_HEADER_SIZE = 26; // 1 + 16 + 4 + 4 + 1 (version + uuid + k + symbolIndex + crc)
-const SYMBOL_DATA_SIZE = 1500; // Payload minus header overhead
+const QR_PAYLOAD_MAX = MAX_PAYLOAD_BYTES;
 const FPS = 20;
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB max recommended file size
 
 // State
-let currentFile = null;
-let compressedData = null;
-let compressionMode = 'none';
+let currentFiles = []; // Array of { file, compressedData, compressionMode }
 let encoderWorker = null;
 let decoderWorker = null;
 let ltDecoderWorker = null;
@@ -54,7 +58,13 @@ let isTransferring = false;
 let wakeLock = null;
 let stream = null;
 let animationFrameCount = 0;
-let receivedFileBlob = null;
+let receivedFiles = []; // Array of received files
+let currentUUIDBytes = null; // Store UUID as Uint8Array for sender
+let totalSymbols = 0;
+let symbolsCollected = 0;
+let currentSymbolIndex = 0;
+let allFileMetadata = []; // For batch transfer
+let currentReceivedFiles = null; // For multiple file downloads
 
 // Utility functions
 function showToast(message, type = 'success') {
@@ -75,6 +85,17 @@ function formatBytes(bytes) {
 
 function generateUUID() {
   return crypto.randomUUID();
+}
+
+// Convert UUID string to bytes (first 16 bytes of the hex representation)
+function uuidStringToBytes(uuidStr) {
+  // Remove hyphens and convert hex to bytes
+  const hex = uuidStr.replace(/-/g, '');
+  const bytes = new Uint8Array(16);
+  for (let i = 0; i < 16; i++) {
+    bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+  }
+  return bytes;
 }
 
 function uint8ArrayToBase64(arr) {
@@ -293,60 +314,34 @@ function renderQRCode(qr, canvas) {
 }
 
 // Create QR payload with improved structure
-// Header: [1 byte version][16 bytes UUID][4 bytes k][4 bytes symbolIndex][2 bytes CRC]
-function createQRPayload(uuid, totalSymbols, symbolIndex, packetData) {
-  const payload = new Uint8Array(QR_PAYLOAD_MAX);
+// Header: [1 byte version][16 bytes UUID][4 bytes k][4 bytes symbolIndex][data][2 bytes CRC]
+function createQRPayload(uuidBytes, totalSymbols, symbolIndex, packetData) {
+  const payloadSize = HEADER_SIZE + packetData.length;
+  const payload = new Uint8Array(payloadSize);
   const view = new DataView(payload.buffer);
   
-  // Header version (1 byte)
-  payload[0] = 0x01;
-  
-  // UUID (16 bytes) - full UUID
-  const uuidBytes = new TextEncoder().encode(uuid);
-  payload.set(uuidBytes.slice(0, 16), 1);
-  
-  // Total symbols (4 bytes, big-endian)
-  view.setUint32(17, totalSymbols, false);
-  
-  // Symbol index (4 bytes, big-endian)
-  view.setUint32(21, symbolIndex, false);
-  
-  // Packet data starts at offset 25
-  const dataOffset = 25;
-  const availableSpace = QR_PAYLOAD_MAX - dataOffset - 2; // Reserve 2 bytes for CRC
-  const dataLength = Math.min(packetData.length, availableSpace);
-  payload.set(packetData.slice(0, dataLength), dataOffset);
+  let offset = 0;
+  payload[offset++] = 0x01;                    // 1 byte version
+  payload.set(uuidBytes, offset);              // 16 bytes UUID
+  offset += 16;
+  view.setUint32(offset, totalSymbols, false); // 4 bytes k (big-endian)
+  offset += 4;
+  view.setUint32(offset, symbolIndex, false);  // 4 bytes symbol index
+  offset += 4;
+  payload.set(packetData, offset);             // symbol data
+  offset += packetData.length;
   
   // Calculate CRC16 for error detection
-  const crc = calculateCRC16(payload.slice(0, dataOffset + dataLength));
-  view.setUint16(dataOffset + dataLength, crc, false);
+  const crc = calculateCRC16(payload.slice(0, offset));
+  view.setUint16(offset, crc, false);          // 2 bytes CRC
   
-  // Convert to string for QR encoding
+  // Convert to base64 string for QR encoding
   let binary = '';
-  for (let i = 0; i < QR_PAYLOAD_MAX; i++) {
+  for (let i = 0; i < payload.length; i++) {
     binary += String.fromCharCode(payload[i]);
   }
   
   return btoa(binary);
-}
-
-// CRC16 calculation for error detection
-function calculateCRC16(data) {
-  let crc = 0xFFFF;
-  const polynomial = 0x1021;
-  
-  for (let i = 0; i < data.length; i++) {
-    crc ^= (data[i] << 8);
-    for (let j = 0; j < 8; j++) {
-      if ((crc & 0x8000) !== 0) {
-        crc = ((crc << 1) ^ polynomial) & 0xFFFF;
-      } else {
-        crc = (crc << 1) & 0xFFFF;
-      }
-    }
-  }
-  
-  return crc;
 }
 
 function parseQRPayload(base64Data) {
@@ -358,8 +353,8 @@ function parseQRPayload(base64Data) {
       payload[i] = binary.charCodeAt(i);
     }
     
-    // Minimum payload size check
-    if (payload.length < 27) { // version(1) + uuid(16) + k(4) + symbolIndex(4) + crc(2)
+    // Minimum payload size check: version(1) + uuid(16) + k(4) + symbolIndex(4) + crc(2) = 27
+    if (payload.length < HEADER_SIZE + 2) {
       return null;
     }
     
@@ -379,20 +374,23 @@ function parseQRPayload(base64Data) {
     const uuid = uuidHex;
     
     const view = new DataView(payload.buffer);
-    const totalSymbols = view.getUint32(17, false);
-    const symbolIndex = view.getUint32(21, false);
+    let offset = 17;
+    const totalSymbols = view.getUint32(offset, false);
+    offset += 4;
+    const symbolIndex = view.getUint32(offset, false);
+    offset += 4;
     
     // Verify CRC
-    const dataOffset = 25;
-    const receivedCRC = view.getUint16(QR_PAYLOAD_MAX - 2, false);
-    const calculatedCRC = calculateCRC16(payload.slice(0, QR_PAYLOAD_MAX - 2));
+    const dataEnd = payload.length - 2;
+    const receivedCRC = view.getUint16(dataEnd, false);
+    const calculatedCRC = calculateCRC16(payload.slice(0, dataEnd));
     
     if (receivedCRC !== calculatedCRC) {
       console.warn('CRC mismatch, packet may be corrupted');
       // Still try to process but with lower confidence
     }
     
-    const packetData = payload.slice(dataOffset, QR_PAYLOAD_MAX - 2);
+    const packetData = payload.slice(offset, dataEnd);
     
     return { uuid, totalSymbols, symbolIndex, packetData };
   } catch (e) {
@@ -401,38 +399,45 @@ function parseQRPayload(base64Data) {
   }
 }
 
-// Sender workflow
+// Sender workflow - Support multiple file selection
 sendBtn.addEventListener('click', () => {
   fileInput.click();
 });
 
 fileInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const files = Array.from(e.target.files);
+  if (files.length === 0) return;
   
-  // Check file size limit
-  if (file.size > MAX_FILE_SIZE) {
-    showToast(`File too large! Max recommended size is ${formatBytes(MAX_FILE_SIZE)}`, 'error');
+  // Check total size limit (10 MB per file, but allow multiple files)
+  const oversizedFiles = files.filter(f => f.size > MAX_FILE_SIZE);
+  if (oversizedFiles.length > 0) {
+    showToast(`Some files too large! Max recommended size is ${formatBytes(MAX_FILE_SIZE)} per file`, 'error');
+    // Remove oversized files
+    currentFiles = files.filter(f => f.size <= MAX_FILE_SIZE);
+  } else {
+    currentFiles = files;
+  }
+  
+  if (currentFiles.length === 0) {
     fileInput.value = '';
     return;
   }
   
-  currentFile = file;
+  // Check if any file is a media file that needs quality adjustment
+  const imageFiles = currentFiles.filter(f => f.type.startsWith('image/'));
   
-  // Check if it's a media file
-  const isMedia = file.type.startsWith('image/') || 
-                  file.type.startsWith('video/') || 
-                  file.type.startsWith('audio/');
-  
-  if (isMedia && file.type.startsWith('image/')) {
+  if (imageFiles.length > 0) {
     // Show quality modal for images
-    fileNameDisplay.textContent = file.name;
-    fileSizeDisplay.textContent = formatBytes(file.size);
-    fileTypeDisplay.textContent = file.type;
+    const firstImage = imageFiles[0];
+    fileNameDisplay.textContent = imageFiles.length > 1 
+      ? `${imageFiles.length} images selected`
+      : firstImage.name;
+    fileSizeDisplay.textContent = formatBytes(imageFiles.reduce((sum, f) => sum + f.size, 0));
+    fileTypeDisplay.textContent = 'Multiple images';
     qualityModal.classList.add('active');
   } else {
-    // Start compression directly for non-media or video/audio
-    await startCompression(file, 0.6);
+    // Start compression directly for non-media files
+    await compressAllFiles(0.6);
   }
 });
 
@@ -443,14 +448,89 @@ qualitySlider.addEventListener('input', () => {
 startTransferBtn.addEventListener('click', async () => {
   qualityModal.classList.remove('active');
   const quality = parseInt(qualitySlider.value) / 100;
-  await startCompression(currentFile, quality);
+  await compressAllFiles(quality);
 });
 
 cancelCompressionBtn.addEventListener('click', () => {
   qualityModal.classList.remove('active');
-  currentFile = null;
+  currentFiles = [];
   fileInput.value = '';
 });
+
+async function compressAllFiles(quality = 0.6) {
+  if (currentFiles.length === 0) return;
+  
+  const compressedResults = [];
+  let totalOriginalSize = 0;
+  let totalCompressedSize = 0;
+  
+  for (const file of currentFiles) {
+    try {
+      showToast(`Compressing ${file.name}...`);
+      const result = await compressFile(file, quality);
+      compressedResults.push({
+        file: file,
+        data: result.data,
+        mode: result.mode,
+        originalSize: result.originalSize,
+        compressedSize: result.compressedSize
+      });
+      totalOriginalSize += result.originalSize;
+      totalCompressedSize += result.compressedSize;
+    } catch (err) {
+      console.error(`Failed to compress ${file.name}:`, err);
+      showToast(`Failed to compress ${file.name}`, 'error');
+    }
+  }
+  
+  if (compressedResults.length === 0) {
+    showToast('No files could be compressed', 'error');
+    fileInput.value = '';
+    return;
+  }
+  
+  // Store compressed data
+  currentFiles = compressedResults;
+  
+  // Calculate total symbols needed
+  const totalDataSize = compressedResults.reduce((sum, r) => sum + r.compressedSize, 0);
+  const k = Math.ceil(totalDataSize / SYMBOL_DATA_SIZE);
+  
+  // Prepare metadata for all files
+  allFileMetadata = compressedResults.map(r => ({
+    name: r.file.name,
+    type: r.file.type,
+    size: r.compressedSize,
+    mode: r.mode,
+    originalSize: r.originalSize
+  }));
+  
+  // Generate UUID for this transfer session
+  currentUUIDBytes = generateUUIDBytes();
+  const uuidHex = uuidBytesToHex(currentUUIDBytes);
+  
+  // Check if we can do static QR (single file and fits in one QR)
+  if (compressedResults.length === 1 && totalDataSize <= QR_PAYLOAD_MAX - HEADER_SIZE) {
+    // Static QR code for tiny files
+    showToast('Generating static QR code...');
+    const packetData = compressedResults[0].data;
+    const base64Payload = createQRPayload(currentUUIDBytes, 1, 0, packetData);
+    
+    // Also include metadata in a separate header QR
+    const headerData = new TextEncoder().encode(JSON.stringify({
+      files: allFileMetadata,
+      uuid: uuidHex,
+      singleFrame: true
+    }));
+    
+    // For single frame, we embed everything in one QR with special marker
+    // Simplified: just show the data QR
+    displayStaticQR(base64Payload);
+  } else {
+    // Animated QR codes for larger files
+    startAnimatedTransfer(k, uuidHex);
+  }
+}
 
 async function startCompression(file, quality) {
   showToast('Compressing file...', 'success');
@@ -495,12 +575,50 @@ function showStaticQR(data) {
   
   requestWakeLock();
 }
-async function startAnimatedTransfer(data) {
-  const uuid = generateUUID();
-  const totalSymbols = Math.ceil(data.length / SYMBOL_DATA_SIZE);
+async function startAnimatedTransfer(k, uuidHex) {
+  // k is total symbols, uuidHex is the UUID string
+  const uuidBytes = uuidStringToBytes(uuidHex);
+  currentUUIDBytes = uuidBytes;
+
+  // Concatenate all file data with metadata headers
+  // Format: [metadata JSON length (4 bytes)][metadata JSON][file1 data][file2 data]...
+  const metadata = {
+    files: allFileMetadata,
+    uuid: uuidHex,
+    version: 1
+  };
+  const metadataJson = JSON.stringify(metadata);
+  const metadataBytes = new TextEncoder().encode(metadataJson);
+  
+  // Build combined data
+  const metadataLenBuf = new ArrayBuffer(4);
+  const metadataLenView = new DataView(metadataLenBuf);
+  metadataLenView.setUint32(0, metadataBytes.length, false);
+  
+  let totalSize = 4 + metadataBytes.length;
+  for (const result of currentFiles) {
+    totalSize += result.compressedSize;
+  }
+  
+  const combinedData = new Uint8Array(totalSize);
+  let offset = 0;
+  
+  // Add metadata length
+  combinedData.set(new Uint8Array(metadataLenBuf), offset);
+  offset += 4;
+  
+  // Add metadata
+  combinedData.set(metadataBytes, offset);
+  offset += metadataBytes.length;
+  
+  // Add each file's compressed data
+  for (const result of currentFiles) {
+    combinedData.set(result.data, offset);
+    offset += result.compressedSize;
+  }
 
   // Initialize encoder worker
-  encoderWorker = new Worker('/src/workers/encoder-worker.js');
+  encoderWorker = new Worker('/src/workers/encoder-worker.js', { type: 'module' });
 
   encoderWorker.onmessage = (e) => {
     if (e.data.type === 'initialized') {
@@ -509,23 +627,23 @@ async function startAnimatedTransfer(data) {
       
       // After 2 seconds of focus assist, show header QR
       setTimeout(() => {
-        showHeaderQR(uuid, totalSymbols);
+        showHeaderQR(uuidHex, k);
         
         // After 2 seconds of header QR, start animated transfer
         setTimeout(() => {
-          startQRAnimation(uuid, totalSymbols);
+          startQRAnimation(k);
         }, 2000);
       }, 2000);
     } else if (e.data.type === 'symbol') {
       // Render this symbol
-      renderSymbolQR(uuid, totalSymbols, e.data.symbolIndex, e.data.packet);
+      renderSymbolQR(currentUUIDBytes, k, e.data.symbolIndex, e.data.payload);
     }
   };
 
   encoderWorker.postMessage({
     type: 'init',
-    data: data,
-    uuid: uuid
+    data: combinedData,
+    uuid: Array.from(currentUUIDBytes)
   });
 
   qrScreen.classList.add('active');
@@ -575,11 +693,8 @@ function showHeaderQR(uuid, totalSymbols) {
     v: 1,
     uuid: uuid,
     k: totalSymbols,
-    name: currentFile.name,
-    size: compressedData.length,
-    mode: compressionMode,
-    origName: currentFile.name,
-    origType: currentFile.type
+    files: allFileMetadata,
+    totalFiles: currentFiles.length
   });
   
   // Encode header as base64
@@ -591,10 +706,10 @@ function showHeaderQR(uuid, totalSymbols) {
   }
   
   document.getElementById('qrTitle').textContent = 'Preparing...';
-  document.getElementById('qrSubtitle').textContent = 'Header information';
+  document.getElementById('qrSubtitle').textContent = `${currentFiles.length} file(s) • Header information`;
 }
 
-function startQRAnimation(uuid, totalSymbols) {
+function startQRAnimation(totalSymbols) {
   let lastFrameTime = 0;
   const frameInterval = 1000 / FPS;
   
@@ -617,9 +732,9 @@ function startQRAnimation(uuid, totalSymbols) {
   qrAnimationId = requestAnimationFrame(animate);
 }
 
-function renderSymbolQR(uuid, totalSymbols, symbolIndex, packet) {
-  const payload = createQRPayload(uuid, totalSymbols, symbolIndex, packet);
-  const qr = generateQRCode(payload);
+function renderSymbolQR(uuidBytes, totalSymbols, symbolIndex, payload) {
+  const qrPayload = createQRPayload(uuidBytes, totalSymbols, symbolIndex, payload);
+  const qr = generateQRCode(qrPayload);
   
   if (qr) {
     renderQRCode(qr, qrCanvas);
@@ -715,26 +830,22 @@ function handleDecodedQR(e) {
         currentTransferUUID = header.uuid;
         expectedTotalSymbols = header.k;
         
-        // Store metadata for later use
+        // Store metadata for later use - support multiple files
         transferMetadata = {
-          fileName: header.origName || 'received_file',
-          fileType: header.origType || 'application/octet-stream',
-          size: header.size,
-          compressionMode: header.mode
+          files: header.files || [],
+          totalFiles: header.totalFiles || 1,
+          compressionMode: 'mixed'
         };
         
-        // Initialize LT decoder
-        ltDecoderWorker = new Worker('/src/workers/lt-decoder-worker.js');
+        // Initialize LT decoder with module type
+        ltDecoderWorker = new Worker('/src/workers/lt-decoder-worker.js', { type: 'module' });
         
         ltDecoderWorker.onmessage = handleLTDecoderMessage;
         
         ltDecoderWorker.postMessage({
           type: 'init',
           totalSymbols: header.k,
-          originalSize: header.size,
-          fileName: header.origName,
-          fileType: header.origType,
-          compressionMode: header.mode
+          metadata: transferMetadata
         });
         
         progressContainer.style.display = 'block';
@@ -747,7 +858,7 @@ function handleDecodedQR(e) {
         const timeEstimate = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
         document.getElementById('qrSubtitle').textContent = `~${timeEstimate} remaining`;
         
-        showToast('Header received! Scanning data...', 'success');
+        showToast(`Header received! ${header.totalFiles || 1} file(s) to receive...`, 'success');
       }
     } catch (e) {
       // Not a header, ignore
@@ -764,8 +875,7 @@ function handleDecodedQR(e) {
         // Send to LT decoder
         ltDecoderWorker.postMessage({
           type: 'symbol',
-          symbolIndex: parsed.symbolIndex,
-          packet: parsed.packetData
+          payload: parsed.packetData
         });
         
         updateProgress(receivedSymbols.size, expectedTotalSymbols);
@@ -798,30 +908,96 @@ async function handleTransferComplete(arrayBuffer) {
   cameraScreen.classList.remove('active');
   
   // Get metadata from transfer (stored when header was received)
-  const fileName = transferMetadata?.fileName || 'received_file';
-  const fileType = transferMetadata?.fileType || 'application/octet-stream';
-  const actualSize = transferMetadata?.size || arrayBuffer.byteLength;
+  const files = transferMetadata?.files || [];
+  const totalFiles = transferMetadata?.totalFiles || 1;
   
-  // Decompress if needed
-  let finalData = new Uint8Array(arrayBuffer);
+  // Parse combined data: [metadata length (4 bytes)][metadata JSON][file1 data][file2 data]...
+  const dataView = new DataView(arrayBuffer);
+  const metadataLen = dataView.getUint32(0, false);
+  const metadataBytes = new Uint8Array(arrayBuffer, 4, metadataLen);
+  const metadataJson = new TextDecoder().decode(metadataBytes);
+  const parsedMetadata = JSON.parse(metadataJson);
   
-  // Trim to actual size (remove padding)
-  finalData = finalData.slice(0, actualSize);
+  // Extract individual files
+  let offset = 4 + metadataLen;
+  const receivedFilesList = [];
   
-  // Store for download
-  receivedFileBlob = new Blob([finalData], { type: fileType });
+  for (const fileInfo of parsedMetadata.files) {
+    const fileData = new Uint8Array(arrayBuffer, offset, fileInfo.size);
+    offset += fileInfo.size;
+    
+    // Decompress if needed
+    let finalData = fileData;
+    if (fileInfo.mode === 'gzip' && typeof DecompressionStream !== 'undefined') {
+      try {
+        const ds = new DecompressionStream('gzip');
+        const writer = ds.writable.getWriter();
+        writer.write(fileData);
+        writer.close();
+        
+        const decompressedChunks = [];
+        const reader = ds.readable.getReader();
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          decompressedChunks.push(value);
+        }
+        
+        const totalLength = decompressedChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+        finalData = new Uint8Array(totalLength);
+        let off = 0;
+        for (const chunk of decompressedChunks) {
+          finalData.set(chunk, off);
+          off += chunk.length;
+        }
+      } catch (e) {
+        console.warn('Decompression failed, using compressed data:', e);
+      }
+    }
+    
+    receivedFilesList.push({
+      name: fileInfo.name,
+      type: fileInfo.type,
+      size: finalData.length,
+      data: finalData
+    });
+  }
   
-  // Update modal
-  receivedFileName.textContent = fileName;
-  receivedFileSize.textContent = formatBytes(finalData.length);
-  receivedFileType.textContent = fileType;
+  // Show download modal with multiple files option
+  showDownloadModal(receivedFilesList);
+  showToast(`Transfer complete! ${receivedFilesList.length} file(s) received.`, 'success');
+}
+
+function showDownloadModal(files) {
+  if (files.length === 1) {
+    // Single file - show simple modal
+    const file = files[0];
+    receivedFileName.textContent = file.name;
+    receivedFileSize.textContent = formatBytes(file.size);
+    receivedFileType.textContent = file.type;
+    
+    // Store single blob for download
+    receivedFileBlob = new Blob([file.data], { type: file.type });
+    currentReceivedFiles = files;
+  } else {
+    // Multiple files - show list
+    receivedFileName.textContent = `${files.length} files`;
+    const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+    receivedFileSize.textContent = formatBytes(totalSize);
+    receivedFileType.textContent = 'Multiple files';
+    
+    // Store all files
+    currentReceivedFiles = files;
+    receivedFileBlob = null;
+  }
   
   downloadModal.classList.add('active');
-  showToast('Transfer complete!', 'success');
 }
 
 downloadFileBtn.addEventListener('click', () => {
   if (receivedFileBlob) {
+    // Single file download
     const url = URL.createObjectURL(receivedFileBlob);
     const a = document.createElement('a');
     a.href = url;
@@ -833,8 +1009,34 @@ downloadFileBtn.addEventListener('click', () => {
     
     downloadModal.classList.remove('active');
     receivedFileBlob = null;
+  } else if (currentReceivedFiles && currentReceivedFiles.length > 1) {
+    // Multiple files - download all as ZIP or individually
+    // For simplicity, download each file sequentially
+    downloadAllFiles(currentReceivedFiles);
   }
 });
+
+async function downloadAllFiles(files) {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const url = URL.createObjectURL(new Blob([file.data], { type: file.type }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Small delay between downloads
+    if (i < files.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+  }
+  
+  downloadModal.classList.remove('active');
+  currentReceivedFiles = null;
+}
 
 closeDownloadModalBtn.addEventListener('click', () => {
   downloadModal.classList.remove('active');

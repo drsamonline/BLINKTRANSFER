@@ -20,14 +20,26 @@ self.onmessage = function(e) {
         const scaledWidth = Math.floor(imageData.width * scale);
         const scaledHeight = Math.floor(imageData.height * scale);
         
-        const scaledCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
-        const scaledCtx = scaledCanvas.getContext('2d');
-        scaledCtx.drawImage(
-          imageData, 
-          0, 0, imageData.width, imageData.height,
-          0, 0, scaledWidth, scaledHeight
-        );
-        const scaledImageData = scaledCtx.getImageData(0, 0, scaledWidth, scaledHeight);
+        const tempCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Create ImageData from array
+        const scaledImageData = tempCtx.createImageData(scaledWidth, scaledHeight);
+        
+        // Simple bilinear scaling
+        for (let y = 0; y < scaledHeight; y++) {
+          for (let x = 0; x < scaledWidth; x++) {
+            const srcX = Math.floor(x / scale);
+            const srcY = Math.floor(y / scale);
+            const srcIdx = (srcY * imageData.width + srcX) * 4;
+            const dstIdx = (y * scaledWidth + x) * 4;
+            
+            scaledImageData.data[dstIdx] = imageData.data[srcIdx];
+            scaledImageData.data[dstIdx + 1] = imageData.data[srcIdx + 1];
+            scaledImageData.data[dstIdx + 2] = imageData.data[srcIdx + 2];
+            scaledImageData.data[dstIdx + 3] = imageData.data[srcIdx + 3];
+          }
+        }
         
         code = jsQR(scaledImageData.data, scaledWidth, scaledHeight, {
           inversionAttempts: 'attemptBoth'
@@ -40,14 +52,24 @@ self.onmessage = function(e) {
         const scaledWidth = Math.floor(imageData.width * scale);
         const scaledHeight = Math.floor(imageData.height * scale);
         
-        const scaledCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
-        const scaledCtx = scaledCanvas.getContext('2d');
-        scaledCtx.drawImage(
-          imageData, 
-          0, 0, imageData.width, imageData.height,
-          0, 0, scaledWidth, scaledHeight
-        );
-        const scaledImageData = scaledCtx.getImageData(0, 0, scaledWidth, scaledHeight);
+        const tempCanvas = new OffscreenCanvas(scaledWidth, scaledHeight);
+        const tempCtx = tempCanvas.getContext('2d');
+        const scaledImageData = tempCtx.createImageData(scaledWidth, scaledHeight);
+        
+        // Simple bilinear scaling
+        for (let y = 0; y < scaledHeight; y++) {
+          for (let x = 0; x < scaledWidth; x++) {
+            const srcX = Math.floor(x / scale);
+            const srcY = Math.floor(y / scale);
+            const srcIdx = (srcY * imageData.width + srcX) * 4;
+            const dstIdx = (y * scaledWidth + x) * 4;
+            
+            scaledImageData.data[dstIdx] = imageData.data[srcIdx];
+            scaledImageData.data[dstIdx + 1] = imageData.data[srcIdx + 1];
+            scaledImageData.data[dstIdx + 2] = imageData.data[srcIdx + 2];
+            scaledImageData.data[dstIdx + 3] = imageData.data[srcIdx + 3];
+          }
+        }
         
         code = jsQR(scaledImageData.data, scaledWidth, scaledHeight, {
           inversionAttempts: 'attemptBoth'

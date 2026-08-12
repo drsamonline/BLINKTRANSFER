@@ -1,5 +1,13 @@
 // LT Code Decoder using Belief Propagation
-const SYMBOL_DATA_SIZE = 1500; // Reduced from 2936 for reliable scanning
+import { 
+  SYMBOL_DATA_SIZE, 
+  HEADER_SIZE, 
+  calculateCRC16, 
+  createDegreeGenerator, 
+  selectDistinctIndices 
+} from '../lib/utils.js';
+
+const QR_HEADER_VERSION = 0x01;
 
 class LTDecoder {
   constructor(totalSymbols, symbolSize = SYMBOL_DATA_SIZE) {
@@ -12,23 +20,59 @@ class LTDecoder {
     for (let i = 0; i < totalSymbols; i++) {
       this.graph[i] = [];
     }
+    
+    // Pre-compute degree generator
+    this.getDegree = createDegreeGenerator(totalSymbols);
   }
 
-  addSymbol(symbolIndex, packet) {
-    const sourceIdx = symbolIndex % this.k;
-    if (this.sourceBlocks[sourceIdx] !== null) {
-      return false; // Already recovered
+  addSymbol(payload) {
+    // Parse payload: [ver(1)][uuid(16)][k(4)][idx(4)][data][crc(2)]
+    if (payload.length < HEADER_SIZE + 2) {
+      return { success: false, error: 'Payload too short' };
     }
 
-    // Parse packet: [seed (4)][symbol_index (4)][data]
-    const view = new DataView(packet.buffer);
-    const seed = view.getUint32(0, false);
-    const idx = view.getUint32(4, false);
-    const data = packet.slice(8);
+    const view = new DataView(payload.buffer);
+    let offset = 0;
 
-    // We need to regenerate the indices from the seed
-    const indices = this.selectIndicesFromSeed(seed, this.k);
-    
+    const version = payload[offset++];
+    if (version !== QR_HEADER_VERSION) {
+      return { success: false, error: `Invalid version: ${version}` };
+    }
+
+    // Skip UUID (16 bytes) - we assume it matches the current transfer
+    offset += 16;
+
+    const k = view.getUint32(offset, false);
+    offset += 4;
+
+    if (k !== this.k) {
+      return { success: false, error: `K mismatch: expected ${this.k}, got ${k}` };
+    }
+
+    const symbolIndex = view.getUint32(offset, false);
+    offset += 4;
+
+    // Extract data
+    const dataEnd = payload.length - 2;
+    const data = payload.slice(offset, dataEnd);
+
+    // Verify CRC
+    const receivedCrc = view.getUint16(dataEnd, false);
+    const calculatedCrc = calculateCRC16(payload.slice(0, dataEnd));
+    if (receivedCrc !== calculatedCrc) {
+      return { success: false, error: 'CRC mismatch' };
+    }
+
+    // Get degree and indices from symbolIndex (same as encoder)
+    const degree = this.getDegree(symbolIndex);
+    const indices = selectDistinctIndices(symbolIndex, degree, this.k);
+
+    // Check if already recovered
+    const sourceIdx = symbolIndex % this.k;
+    if (this.sourceBlocks[sourceIdx] !== null) {
+      return { success: false, error: 'Already recovered', duplicate: true };
+    }
+
     // Store the received symbol
     this.receivedSymbols.set(symbolIndex, {
       degree: indices.length,
@@ -42,84 +86,8 @@ class LTDecoder {
     }
 
     // Try belief propagation
-    return this.beliefPropagation();
-  }
-
-  selectIndicesFromSeed(seed, k) {
-    // Reproduce the same index selection as encoder
-    const c = 0.1;
-    const delta = 0.01;
-    const sumTau = this.computeSumTau(k);
-    const R = Math.ceil(c * Math.sqrt(k) * Math.log(k / delta) / sumTau);
-
-    // Compute degree using same RSD
-    const random = this.seededRandom(seed);
-    
-    const rho = new Array(k + 1).fill(0);
-    rho[1] = 1 / k;
-    for (let d = 2; d <= k; d++) {
-      rho[d] = 1 / (d * (d - 1));
-    }
-
-    const tau = new Array(k + 1).fill(0);
-    for (let d = 1; d < R; d++) {
-      tau[d] = R / (d * k);
-    }
-    tau[R] = R * Math.log(R / delta) / k;
-
-    const mu = new Array(k + 1).fill(0);
-    for (let d = 1; d <= k; d++) {
-      mu[d] = (rho[d] + tau[d]) / (sumTau / k + R / k * Math.log(R / delta));
-    }
-
-    let sum = 0;
-    for (let d = 1; d <= k; d++) {
-      sum += mu[d];
-    }
-    for (let d = 1; d <= k; d++) {
-      mu[d] /= sum;
-    }
-
-    const cumulative = new Array(k + 1).fill(0);
-    for (let d = 1; d <= k; d++) {
-      cumulative[d] = cumulative[d - 1] + mu[d];
-    }
-
-    const r = random();
-    let degree = 1;
-    for (let d = 1; d <= k; d++) {
-      if (r <= cumulative[d]) {
-        degree = d;
-        break;
-      }
-    }
-    degree = Math.max(1, Math.min(k, degree));
-
-    // Select indices
-    const indices = new Set();
-    while (indices.size < degree) {
-      const idx = Math.floor(random() * k);
-      indices.add(idx);
-    }
-
-    return Array.from(indices);
-  }
-
-  computeSumTau(k) {
-    let sum = 0;
-    for (let d = 1; d <= k; d++) {
-      sum += 1 / d;
-    }
-    return sum;
-  }
-
-  seededRandom(seed) {
-    return function() {
-      let t = seed += 0x6D2B79F5;
-      t = Math.imul(t ^ t >>> 15, t | 1);
-      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
+    const completed = this.beliefPropagation();
+    return { success: true, completed };
   }
 
   beliefPropagation() {
@@ -177,7 +145,9 @@ class LTDecoder {
     // Concatenate all source blocks
     const data = new Uint8Array(this.k * this.symbolSize);
     for (let i = 0; i < this.k; i++) {
-      data.set(this.sourceBlocks[i], i * this.symbolSize);
+      if (this.sourceBlocks[i]) {
+        data.set(this.sourceBlocks[i], i * this.symbolSize);
+      }
     }
 
     self.postMessage({
@@ -199,7 +169,7 @@ let fileType = '';
 let compressionMode = 'none';
 
 self.onmessage = function(e) {
-  const { type, totalSymbols, symbolIndex, packet, metadata } = e.data;
+  const { type, totalSymbols, payload, metadata } = e.data;
 
   if (type === 'init') {
     decoder = new LTDecoder(totalSymbols);
@@ -215,11 +185,15 @@ self.onmessage = function(e) {
       return;
     }
 
-    const success = decoder.addSymbol(symbolIndex, packet);
+    const result = decoder.addSymbol(payload);
     
-    if (success && decoder.isComplete()) {
-      // File is complete, send it back with metadata
-      // The complete message already includes the data
+    if (!result.success && !result.duplicate) {
+      // Log error but continue (might be corrupted packet)
+      console.warn('Symbol rejected:', result.error);
+    }
+    
+    if (result.completed && decoder.isComplete()) {
+      // File is complete, complete message already sent
     }
   } else if (type === 'setMetadata') {
     originalSize = e.data.originalSize || 0;

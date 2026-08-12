@@ -41,6 +41,7 @@ export default defineConfig({
       // Copy lib files
       copyFileSync('src/lib/jsQR.min.js', join(dist, 'src', 'lib', 'jsQR.min.js'));
       copyFileSync('src/lib/qrcode-gen.js', join(dist, 'src', 'lib', 'qrcode-gen.js'));
+      copyFileSync('src/lib/utils.js', join(dist, 'src', 'lib', 'utils.js'));
     }
   }]
 });
