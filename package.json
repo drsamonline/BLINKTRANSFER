@@ -1,7 +1,7 @@
 {
   "name": "blinktransfer",
-  "version": "1.0.0",
-  "description": "Offline file transfer PWA using animated QR codes and fountain codes",
+  "version": "2.0.0",
+  "description": "Offline file transfer via animated QR codes with fountain codes",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,10 +9,6 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^5.0.0"
-  },
-  "dependencies": {
-    "jsqr": "^1.4.0",
-    "qrcode-generator": "^1.4.4"
+    "vite": "^5.4.0"
   }
 }
