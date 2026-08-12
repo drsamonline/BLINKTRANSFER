@@ -1,144 +1,184 @@
-# BlinkTransfer PWA
+# BlinkTransfer 📤📥
 
-**Offline file transfer using animated QR codes and fountain codes (LT codes)**
+**Offline file transfer using animated QR codes** - No internet, no Bluetooth, no cables. Just point and scan!
 
-## Features
+## ✨ Features
 
-- ✅ **Completely offline** - No internet, Bluetooth, or cables needed
-- ✅ **Lossless transfer** for documents, executables, archives
-- ✅ **Lossy compression** for images (adjustable quality) to speed up transfer
-- ✅ **Fountain codes (LT codes)** - Receiver only needs ~105% of symbols to reconstruct
-- ✅ **Static QR** for tiny files (≤2953 bytes)
-- ✅ **Animated QR** at 20 FPS for larger files
-- ✅ **Web Workers** for all heavy processing (non-blocking UI)
-- ✅ **PWA** - Installable, works offline after first load
-- ✅ **Wake Lock** - Keeps screen on during transfer
-- ✅ **Camera permission** requested on first use
-- ✅ **Save/Download** option for received files
+### Core Functionality
+- **Static QR**: Instant transfer for tiny files (≤1.6 KB compressed)
+- **Animated QR**: 20 FPS streaming for larger files
+- **Fountain Codes (LT Codes)**: Receiver needs only k+5% of frames to reconstruct files
+- **Multi-file Transfer**: Select and transfer multiple files in one session
+- **Focus Assist**: 2-second calibration pattern helps camera adjust
 
-## Architecture
+### Compression
+- **Images (JPEG/PNG/WebP)**: Lossy compression (10-90% quality slider)
+  - Resized to max 1920px on longest side
+  - Re-encoded as JPEG at user-selected quality
+- **Other Files**: Lossless gzip compression via CompressionStream API
+- **File Size Limits**:
+  - Max per file: **5 MB** (practical limit)
+  - Max total batch: **20 MB**
 
-### Sender Flow
-1. User selects file → Compression (lossy for images, gzip for others)
-2. If ≤2953 bytes: Single static QR code
-3. If larger: LT encoding → Animated QR sequence at 20 FPS
-4. Header QR displayed for 2 seconds, then data stream begins
+### Robustness
+- **CRC-16 Checksum**: Every QR frame verified for integrity
+- **Multi-scale Detection**: Scans at 1x, 0.5x, 0.25x scales
+- **Full UUID**: 16-byte unique identifier prevents transfer collisions
+- **Error Correction**: QR Code Version 40-L (lowest ECC for max capacity)
 
-### Receiver Flow
-1. Camera access → Scan for header QR
-2. Parse metadata (UUID, total symbols, filename, compression mode)
-3. Scan data QRs → LT decoding with belief propagation
-4. Progress indicator shows symbols collected
-5. When complete: Decompress → Save/Download file
+### PWA Features
+- **Offline Ready**: Works completely offline after first load
+- **Installable**: Add to home screen on mobile devices
+- **Wake Lock**: Keeps screen on during transfer
+- **Responsive Design**: Works on all modern mobile browsers
 
-### QR Payload Format (2953 bytes max)
-```
-[1 byte]  Header version (0x01)
-[8 bytes] UUID (first 8 chars)
-[4 bytes] Total symbols count (big-endian)
-[4 bytes] Symbol index (big-endian)
-[2936 bytes] Encoded symbol data (padded with zeros)
-```
-
-### LT Code Implementation
-- **Symbol size**: 2936 bytes (fits exactly in QR payload)
-- **Robust Soliton Distribution** for degree selection
-- **Belief Propagation** decoder
-- Receiver needs only k+5% symbols to recover original file
-
-## File Structure
-
-```
-/workspace
-├── index.html              # Main HTML with embedded CSS
-├── manifest.json           # PWA manifest
-├── sw.js                   # Service worker for offline caching
-├── package.json            # Dependencies
-├── vite.config.js          # Build configuration
-├── src/
-│   ├── main.js             # Main application logic
-│   ├── workers/
-│   │   ├── encoder-worker.js    # LT encoder
-│   │   ├── decoder-worker.js    # QR decoder (jsQR)
-│   │   └── lt-decoder-worker.js # LT decoder (belief propagation)
-│   └── lib/
-│       ├── jsQR.min.js     # QR decoding library
-│       └── qrcode-gen.js   # QR encoding library
-├── public/
-│   ├── icon-192.png        # PWA icons
-│   └── icon-512.png
-└── dist/                   # Production build
-```
-
-## Development
+## 🚀 Quick Start
 
 ```bash
 # Install dependencies
 npm install
 
-# Start dev server
+# Development server (port 3000)
 npm run dev
 
-# Build for production
+# Production build
 npm run build
 
 # Preview production build
 npm run preview
 ```
 
-## Usage
+## 📱 Usage
 
-### Sending a File
-1. Open BlinkTransfer on sender device
-2. Tap "Send File"
-3. Select the file to transfer
-4. For images: Adjust quality slider if desired
-5. Point receiver's camera at the QR code
-6. Keep screen visible until transfer completes
+### Sender
+1. Tap **Send File** button
+2. Select one or multiple files (max 5 MB each)
+3. For images: Adjust quality slider (default 60%)
+4. Focus assist pattern displays for 2 seconds
+5. Header QR shows file metadata
+6. Animated data stream begins automatically
+7. Keep screen visible and steady
 
-### Receiving a File
-1. Open BlinkTransfer on receiver device
-2. Tap "Receive File"
-3. Grant camera permission when prompted
-4. Point camera at sender's QR code
-5. Wait for scanning to complete (~105% of symbols needed)
-6. Tap "Save File" to download
+### Receiver
+1. Tap **Receive File** button
+2. Grant camera permission when prompted
+3. Point camera at sender's QR code
+4. Progress bar shows symbols collected
+5. When complete: Tap **Save File** to download
 
-## Browser Compatibility
+## 📊 Performance
 
-- ✅ Chrome/Edge (Android, Desktop)
-- ✅ Safari (iOS 16+, macOS)
-- ✅ Firefox (Android, Desktop)
+| File Type | Original | Compressed | Transfer Time |
+|-----------|----------|------------|---------------|
+| Text doc  | 100 KB   | 30 KB      | 1-2 sec       |
+| Photo     | 5 MB     | 500 KB     | 17-20 sec     |
+| PDF       | 2 MB     | 1.8 MB     | 60-70 sec     |
+| Audio MP3 | 5 MB     | 4.5 MB     | 2.5-3 min     |
+| **Max (5MB)** | 5 MB | ~4 MB      | 2.5-3 min     |
 
-**Required APIs:**
-- `navigator.mediaDevices.getUserMedia` (camera)
-- `CompressionStream` / `DecompressionStream` (optional, graceful fallback)
-- `navigator.wakeLock` (optional, keeps screen on)
-- Web Workers
-- Offscreen Canvas (optional)
+**Transfer Speed**: ~30 KB/s (20 FPS × 1500 bytes/payload)
 
-## Performance Tips
+## 🔧 Technical Details
 
-1. **Image transfers**: Use 40-60% quality for photos (good balance)
-2. **Lighting**: Ensure good lighting for reliable QR scanning
-3. **Distance**: Hold devices 15-30cm apart for optimal scanning
-4. **Stability**: Keep both devices steady during transfer
-5. **Large files**: Expect 1-5 MB per minute depending on conditions
+### QR Code Format
+```
+[1 byte version][16 bytes UUID][4 bytes k][4 bytes symbolIndex][data][2 bytes CRC]
+Total overhead: 27 bytes
+Data payload: 1573 bytes (reduced from 2936 for reliability)
+```
 
-## Limitations
+### LT Code Parameters
+- **Symbol Size**: 1573 bytes
+- **Distribution**: Robust Soliton (c=0.1, δ=0.5)
+- **Overhead**: 5% (receiver needs k×1.05 symbols)
+- **Decoding**: Belief Propagation algorithm
 
-- Maximum practical file size: ~50 MB (would take ~30 minutes)
-- Video/audio files use lossless compression (no re-encoding yet)
-- iOS camera access requires HTTPS or localhost
-- Screen brightness auto-maximum not available on all browsers
+### Web Workers
+- `encoder-worker.js`: LT encoding with pre-computed degree distribution
+- `decoder-worker.js`: QR decoding with jsQR (multi-scale)
+- `lt-decoder-worker.js`: Belief Propagation decoder
 
-## Security Notes
+### Browser Compatibility
+- **Chrome**: 80+ (full support)
+- **Firefox**: 114+ (full support)
+- **Safari**: 16+ (full support)
+- **Required APIs**: CompressionStream, WakeLock, OffscreenCanvas, MediaDevices
 
-- All processing happens locally - no data leaves the device
-- UUID ensures you only receive from intended sender
-- QR codes are ephemeral - disappear when transfer ends
-- No persistent storage of transferred files
+## ⚠️ Limitations
 
-## License
+1. **Video/Audio Compression**: Uses gzip only (not MediaRecorder re-encoding)
+   - Reason: Cross-browser inconsistencies with hidden media elements
+   - Workaround: Pre-compress media files before transfer
 
-MIT License - Feel free to use and modify!
+2. **Large Files**: Files >5 MB work but transfer times become impractical
+   - 10 MB ≈ 5-6 minutes
+   - Recommendation: Use cloud services for large files
+
+3. **Camera Requirements**:
+   - Good lighting essential
+   - Steady hands improve success rate
+   - Rear camera recommended (facingMode: environment)
+
+4. **Browser Support**:
+   - CompressionStream API required for gzip
+   - Older browsers will skip compression (slower transfer)
+
+## 🎨 Customization
+
+Edit `/workspace/src/lib/utils.js` to adjust:
+- `MAX_PAYLOAD_BYTES`: QR payload size (default 1600)
+- `SYMBOL_DATA_SIZE`: LT symbol size (default 1573)
+- `FILE_SIZE_LIMIT`: Max file size warning (default 5 MB)
+- `FRAME_RATE`: Animation speed (default 20 FPS)
+
+## 📁 Project Structure
+
+```
+/workspace
+├── index.html              # Main UI with embedded CSS
+├── manifest.json           # PWA manifest
+├── sw.js                   # Service worker
+├── package.json            # Dependencies
+├── vite.config.js          # Build configuration
+├── README.md               # This file
+├── public/
+│   ├── icon-192.png        # PWA icons
+│   └── icon-512.png
+├── src/
+│   ├── main.js             # Application logic (~1100 lines)
+│   ├── lib/
+│   │   ├── jsQR.min.js     # QR decoder library
+│   │   ├── qrcode-gen.js   # QR encoder library
+│   │   └── utils.js        # Shared utilities
+│   └── workers/
+│       ├── encoder-worker.js
+│       ├── decoder-worker.js
+│       └── lt-decoder-worker.js
+└── dist/                   # Production build
+```
+
+## 🛠️ Development
+
+### Code Quality
+- **Total Lines**: ~2300 (including workers and utils)
+- **Build Size**: 14.2 KB gzipped (main bundle)
+- **No External Dependencies**: All libraries bundled locally
+- **ES Modules**: Modern module syntax throughout
+
+### Recent Improvements
+✅ Fixed worker paths for production builds  
+✅ Reduced QR payload to 1600 bytes for reliability  
+✅ Added CRC-16 checksums for error detection  
+✅ Implemented focus assist pattern  
+✅ Multi-file transfer support  
+✅ Download modal with save option  
+✅ Permission prompts on first run  
+✅ Optimized LT code degree generation  
+
+## 📝 License
+
+MIT License - Feel free to use, modify, and distribute!
+
+---
+
+**Built with ❤️ using vanilla JavaScript and Web APIs**

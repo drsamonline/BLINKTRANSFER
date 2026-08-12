@@ -618,7 +618,7 @@ async function startAnimatedTransfer(k, uuidHex) {
   }
 
   // Initialize encoder worker
-  encoderWorker = new Worker('/src/workers/encoder-worker.js', { type: 'module' });
+  encoderWorker = new Worker('./workers/encoder-worker.js', { type: 'module' });
 
   encoderWorker.onmessage = (e) => {
     if (e.data.type === 'initialized') {
@@ -783,7 +783,7 @@ async function startCameraScanning() {
   receivedSymbols.clear();
   
   // Initialize decoder worker
-  decoderWorker = new Worker('/src/workers/decoder-worker.js');
+  decoderWorker = new Worker('./workers/decoder-worker.js');
   
   decoderWorker.onmessage = handleDecodedQR;
   
@@ -838,7 +838,7 @@ function handleDecodedQR(e) {
         };
         
         // Initialize LT decoder with module type
-        ltDecoderWorker = new Worker('/src/workers/lt-decoder-worker.js', { type: 'module' });
+        ltDecoderWorker = new Worker('./workers/lt-decoder-worker.js', { type: 'module' });
         
         ltDecoderWorker.onmessage = handleLTDecoderMessage;
         

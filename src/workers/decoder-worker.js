@@ -1,5 +1,5 @@
 // QR Decoder Worker - uses jsQR library with multi-scale detection
-importScripts('/src/lib/jsQR.min.js');
+importScripts('./jsQR.min.js');
 
 self.onmessage = function(e) {
   const { type, imageData, options } = e.data;
