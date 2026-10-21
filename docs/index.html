@@ -263,8 +263,9 @@ footer{border-top:1px solid var(--line);padding:44px 0 40px;margin-top:20px;back
 .built b{color:var(--white)}
 
 /* reveal */
-.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
-.reveal.in{opacity:1;transform:none}
+.reveal{transition:opacity .6s ease,transform .6s ease}
+html.js .reveal{opacity:0;transform:translateY(18px)}
+html.js .reveal.in{opacity:1;transform:none}
 
 /* animations */
 @keyframes flowdash{to{stroke-dashoffset:-240}}
@@ -299,6 +300,7 @@ footer{border-top:1px solid var(--line);padding:44px 0 40px;margin-top:20px;back
   .hero{padding-top:48px}
 }
 </style>
+<script>document.documentElement.className += ' js';</script>
 </head>
 <body>
 
@@ -709,10 +711,13 @@ cd BLINKTRANSFER
     if (e.target.tagName === 'A') { nav.classList.remove('open'); t.setAttribute('aria-expanded','false'); }
   });
 
-  // Reveal on scroll
+  // Reveal on scroll (fail-safe)
   var els = document.querySelectorAll('.reveal');
+  function revealAll(){ els.forEach(function(el){ el.classList.add('in'); }); }
+  function revealInView(){ var vh=window.innerHeight||document.documentElement.clientHeight;
+    els.forEach(function(el){ var r=el.getBoundingClientRect(); if(r.top<vh+40&&r.bottom>-40) el.classList.add('in'); }); }
   if (reduce || !('IntersectionObserver' in window)) {
-    els.forEach(function(el){ el.classList.add('in'); });
+    revealAll();
   } else {
     var io = new IntersectionObserver(function(entries){
       entries.forEach(function(en){
@@ -720,6 +725,11 @@ cd BLINKTRANSFER
       });
     }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
     els.forEach(function(el){ io.observe(el); });
+    setTimeout(revealInView,1000);
+    setTimeout(revealAll,4000);
+    window.addEventListener('scroll',revealInView,{passive:true});
+    window.addEventListener('resize',revealInView,{passive:true});
+    window.addEventListener('load',function(){ setTimeout(revealInView,200); });
   }
 
   // Active nav link on scroll
