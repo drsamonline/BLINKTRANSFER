@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlinkTransfer — Offline File Transfer via Animated QR Codes</title>
+<meta name="description" content="BlinkTransfer moves files between devices with no internet, Bluetooth, or cables — animated QR codes at 20 FPS with smart compression, CRC-16 checksums and installable PWA support.">
+<meta name="keywords" content="BlinkTransfer, offline file transfer, animated QR code, air-gapped transfer, QR file sharing, no internet transfer, fountain codes, PWA, drsamonline, drsohil">
+<meta name="author" content="Dr. Sohil Momin">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#04070d">
+<link rel="canonical" href="https://drsamonline.github.io/BLINKTRANSFER/">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BlinkTransfer">
+<meta property="og:title" content="BlinkTransfer — Offline File Transfer via Animated QR Codes">
+<meta property="og:description" content="Send files between devices with no internet, Bluetooth, or cables. Animated QR codes at 20 FPS, smart compression, CRC-16 checksums, installable PWA.">
+<meta property="og:url" content="https://drsamonline.github.io/BLINKTRANSFER/">
+<meta property="og:image" content="https://socialify.git.ci/drsamonline/BLINKTRANSFER/image?name=1&amp;owner=1&amp;description=1&amp;language=1&amp;theme=Dark&amp;font=Inter">
+<meta property="og:image:alt" content="BlinkTransfer — offline file transfer via animated QR codes">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BlinkTransfer — Offline File Transfer via Animated QR Codes">
+<meta name="twitter:description" content="Files at the speed of light, with no wires and no network. Animated QR transfer at 20 FPS with smart compression and CRC-16 integrity.">
+<meta name="twitter:image" content="https://socialify.git.ci/drsamonline/BLINKTRANSFER/image?name=1&amp;owner=1&amp;description=1&amp;language=1&amp;theme=Dark&amp;font=Inter">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "BlinkTransfer",
+  "alternateName": "BlinkTransfer v2.0",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Web (Chrome 80+, Firefox 114+, Safari 16+)",
+  "softwareVersion": "2.0.0",
+  "description": "Offline file transfer via animated QR codes. Moves files between devices with no internet, Bluetooth, or cables using animated QR codes at 20 FPS, smart compression and CRC-16 checksums.",
+  "url": "https://drsamonline.github.io/BLINKTRANSFER/",
+  "codeRepository": "https://github.com/drsamonline/BLINKTRANSFER",
+  "license": "https://opensource.org/licenses/MIT",
+  "author": { "@type": "Person", "name": "Dr. Sohil Momin" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "featureList": [
+    "Completely offline transfer",
+    "Animated QR codes at 20 FPS",
+    "Smart compression (JPEG / Gzip)",
+    "Multi-file sessions",
+    "CRC-16 checksums",
+    "Installable PWA"
+  ]
+}
+</script>
+
+<style>
+:root{
+  --bg:#04070d;
+  --panel:#070c15;
+  --panel2:#0a1120;
+  --line:#16212f;
+  --line2:#1f2e42;
+  --cyan:#22d3ee;
+  --cyan-2:#67e8f9;
+  --cyan-soft:rgba(34,211,238,.12);
+  --white:#eaf6ff;
+  --muted:#8296ab;
+  --muted2:#5d7089;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  --maxw:1180px;
+  --r:14px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--white);
+  font-family:var(--sans);font-size:17px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(1100px 520px at 78% -8%, rgba(34,211,238,.16), transparent 62%),
+    radial-gradient(760px 420px at 8% 6%, rgba(34,211,238,.07), transparent 60%),
+    linear-gradient(180deg,#04070d 0%,#050912 55%,#04070d 100%);
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background-image:
+    linear-gradient(rgba(34,211,238,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34,211,238,.045) 1px, transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(900px 600px at 50% 0%, #000 0%, transparent 78%);
+  -webkit-mask-image:radial-gradient(900px 600px at 50% 0%, #000 0%, transparent 78%);
+}
+a{color:var(--cyan);text-decoration:none}
+a:hover{text-decoration:none;color:var(--cyan-2)}
+h1,h2,h3{line-height:1.1;margin:0;letter-spacing:-.02em}
+p{margin:0}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+.hero-grid>*,.demo-grid>*,.start>*,.how>*,.cards>*{min-width:0}
+.tbl{word-break:break-word}
+.mono{font-family:var(--mono)}
+.eyebrow{
+  font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--cyan);display:inline-flex;align-items:center;gap:10px;
+}
+.eyebrow::before{content:"";width:26px;height:1px;background:var(--cyan);display:inline-block}
+
+/* ---------- NAV ---------- */
+.nav{
+  position:sticky;top:0;z-index:60;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  background:rgba(4,7,13,.78);border-bottom:1px solid var(--line);
+}
+.nav-in{display:flex;align-items:center;gap:26px;height:64px}
+.brand{display:flex;align-items:center;gap:11px;color:var(--white);font-weight:700;letter-spacing:.01em}
+.brand svg{width:26px;height:26px;flex:none}
+.brand b{font-size:16px}
+.brand span{color:var(--muted2);font-family:var(--mono);font-size:11px;letter-spacing:.14em}
+.nav-links{display:flex;gap:22px;margin-left:auto;align-items:center}
+.nav-links a{color:var(--muted);font-size:14px;font-family:var(--mono);letter-spacing:.04em}
+.nav-links a:hover,.nav-links a.active{color:var(--cyan)}
+.nav .ghost{
+  display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line2);
+  border-radius:10px;padding:8px 13px;color:var(--white);font-size:13.5px;font-family:var(--mono);
+}
+.nav .ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+.nav .ghost svg{width:16px;height:16px}
+.nav-toggle{display:none;background:none;border:1px solid var(--line2);border-radius:9px;color:var(--white);padding:6px 9px;cursor:pointer}
+
+/* ---------- BUTTONS ---------- */
+.btn{
+  display:inline-flex;align-items:center;gap:10px;border-radius:12px;
+  padding:13px 22px;font-weight:600;font-size:15px;cursor:pointer;border:1px solid transparent;
+  transition:transform .18s ease, box-shadow .25s ease, background .2s ease, border-color .2s ease;
+  font-family:var(--sans);
+}
+.btn svg{width:18px;height:18px;flex:none}
+.btn-primary{
+  background:linear-gradient(180deg,#22d3ee,#0fb6d4);color:#03212a;
+  box-shadow:0 0 0 1px rgba(34,211,238,.5), 0 10px 34px -12px rgba(34,211,238,.85);
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(34,211,238,.7), 0 16px 44px -12px rgba(34,211,238,.95)}
+.btn-ghost{background:rgba(255,255,255,.02);border-color:var(--line2);color:var(--white)}
+.btn-ghost:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-2px)}
+
+/* ---------- HERO ---------- */
+.hero{position:relative;padding:74px 0 40px}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+.hero h1{font-size:clamp(2.3rem,5vw,3.65rem);font-weight:800;margin:20px 0 18px}
+.hero h1 .hl{
+  background:linear-gradient(100deg,#eaf6ff 10%,#22d3ee 55%,#67e8f9 95%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero p.lede{color:var(--muted);font-size:1.12rem;max-width:56ch}
+.cta{display:flex;flex-wrap:wrap;gap:14px;margin:28px 0 22px}
+.badges{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:6px}
+.badges img{height:22px;display:block}
+.chip{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid var(--line2);border-radius:999px;padding:5px 11px;color:var(--muted);
+  background:rgba(34,211,238,.05);display:inline-flex;align-items:center;gap:7px;
+}
+.chip i{width:6px;height:6px;border-radius:50%;background:var(--cyan);display:inline-block;box-shadow:0 0 10px var(--cyan)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:36px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--line)}
+.stat{background:var(--panel);padding:16px 16px}
+.stat b{display:block;font-family:var(--mono);font-size:1.32rem;color:var(--white);letter-spacing:-.01em}
+.stat span{font-size:12px;color:var(--muted2);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase}
+
+.hero-art{border:1px solid var(--line);border-radius:20px;background:linear-gradient(180deg,#060b14,#04070d);padding:16px;position:relative;overflow:hidden}
+.hero-art .cap{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted2);margin-bottom:8px;text-transform:uppercase}
+.hero-art svg{width:100%;height:auto;display:block}
+
+/* ---------- SECTIONS ---------- */
+section{padding:74px 0;position:relative}
+.sec-head{max-width:64ch;margin-bottom:42px}
+.sec-head h2{font-size:clamp(1.7rem,3.4vw,2.4rem);font-weight:800;margin:16px 0 12px}
+.sec-head p{color:var(--muted)}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--line2),transparent);max-width:var(--maxw);margin:0 auto}
+
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{
+  background:linear-gradient(180deg,var(--panel),#050a12);border:1px solid var(--line);
+  border-radius:var(--r);padding:24px;position:relative;overflow:hidden;
+  transition:transform .2s ease,border-color .2s ease,box-shadow .3s ease;
+}
+.card::after{content:"";position:absolute;inset:0;background:radial-gradient(240px 140px at 20% 0%,rgba(34,211,238,.09),transparent 70%);opacity:0;transition:opacity .3s}
+.card:hover{transform:translateY(-4px);border-color:var(--line2);box-shadow:0 22px 48px -28px rgba(34,211,238,.55)}
+.card:hover::after{opacity:1}
+.card .ic{
+  width:44px;height:44px;border-radius:11px;display:grid;place-items:center;margin-bottom:16px;
+  border:1px solid var(--line2);background:var(--cyan-soft);color:var(--cyan);
+}
+.card .ic svg{width:22px;height:22px}
+.card h3{font-size:1.08rem;margin-bottom:8px;font-weight:700}
+.card p{color:var(--muted);font-size:14.6px}
+.card .tag{position:absolute;top:20px;right:20px;font-family:var(--mono);font-size:10.5px;color:var(--muted2);letter-spacing:.12em}
+
+/* how it works */
+.how{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.flow{background:linear-gradient(180deg,var(--panel),#050a12);border:1px solid var(--line);border-radius:var(--r);padding:26px}
+.flow h3{display:flex;align-items:center;gap:12px;font-size:1.1rem;margin-bottom:20px}
+.flow h3 .dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+.flow h3 .dot.rx{background:var(--white);box-shadow:0 0 12px rgba(234,246,255,.8)}
+.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{
+  position:relative;padding:0 0 18px 46px;color:var(--muted);font-size:15px;counter-increment:s;
+  border-left:1px dashed var(--line2);margin-left:14px;
+}
+.steps li:last-child{border-left-color:transparent;padding-bottom:0}
+.steps li::before{
+  content:counter(s,decimal-leading-zero);position:absolute;left:-15px;top:-2px;width:30px;height:30px;
+  border-radius:8px;background:var(--panel2);border:1px solid var(--line2);color:var(--cyan);
+  font-family:var(--mono);font-size:12px;display:grid;place-items:center;
+}
+.steps li b{color:var(--white);font-weight:600}
+
+/* demo */
+.demo-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:34px;align-items:center}
+.shot{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#04070d}
+.shot img{width:100%;height:auto;display:block}
+.demo-list{list-style:none;margin:0 0 24px;padding:0}
+.demo-list li{display:flex;gap:12px;padding:10px 0;color:var(--muted);border-bottom:1px solid var(--line);font-size:15px}
+.demo-list li svg{width:18px;height:18px;color:var(--cyan);flex:none;margin-top:3px}
+
+/* get started */
+.start{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.panel{background:linear-gradient(180deg,var(--panel),#050a12);border:1px solid var(--line);border-radius:var(--r);padding:26px}
+.panel h3{font-size:1.08rem;margin-bottom:14px}
+pre{
+  background:#03060b;border:1px solid var(--line);border-radius:11px;padding:16px 16px;
+  overflow:auto;font-family:var(--mono);font-size:13.5px;color:#bfe9f5;margin:0 0 16px;line-height:1.7;
+}
+pre .c{color:var(--muted2)}
+pre .k{color:var(--cyan)}
+.tbl{width:100%;border-collapse:collapse;font-size:14.5px}
+.tbl th,.tbl td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line)}
+.tbl th{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2)}
+.tbl td{color:var(--muted)}
+.tbl td:first-child{color:var(--white)}
+
+/* faq */
+.faq{max-width:900px;margin:0 auto}
+details.q{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:12px;overflow:hidden}
+details.q summary{
+  cursor:pointer;list-style:none;padding:18px 20px;font-weight:600;display:flex;align-items:center;gap:14px;font-size:15.5px;
+}
+details.q summary::-webkit-details-marker{display:none}
+details.q summary::after{content:"+";margin-left:auto;font-family:var(--mono);color:var(--cyan);font-size:19px;line-height:1}
+details.q[open] summary::after{content:"–"}
+details.q .a{padding:0 20px 20px;color:var(--muted);font-size:15px;border-top:1px solid var(--line);padding-top:16px}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding:44px 0 40px;margin-top:20px;background:rgba(4,7,13,.6)}
+.foot-grid{display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:flex-start}
+.foot-grid p{color:var(--muted2);font-size:13.5px}
+.foot-links{display:flex;gap:22px;flex-wrap:wrap}
+.foot-links a{color:var(--muted);font-size:13.5px;font-family:var(--mono)}
+.foot-links a:hover{color:var(--cyan)}
+.built{margin-top:26px;padding-top:20px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;color:var(--muted2);font-size:13px;font-family:var(--mono)}
+.built b{color:var(--white)}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* animations */
+@keyframes flowdash{to{stroke-dashoffset:-240}}
+@keyframes pktmove{0%{transform:translateX(0);opacity:0}8%{opacity:1}88%{opacity:1}100%{transform:translateX(760px);opacity:0}}
+@keyframes scanx{0%{transform:translateX(0)}50%{transform:translateX(1120px)}100%{transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.beam-line{stroke-dasharray:8 12;animation:flowdash 4s linear infinite}
+.pkt{animation:pktmove 3.4s linear infinite}
+.pkt.d1{animation-delay:0s}.pkt.d2{animation-delay:.68s}.pkt.d3{animation-delay:1.36s}.pkt.d4{animation-delay:2.04s}.pkt.d5{animation-delay:2.72s}
+.scanbar{animation:scanx 5.6s ease-in-out infinite}
+.node-pulse{animation:pulse 2.6s ease-in-out infinite}
+.live{animation:blink 1.6s steps(1,end) infinite}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .reveal{opacity:1;transform:none}
+}
+
+@media (max-width:960px){
+  .hero-grid,.demo-grid,.start,.how{grid-template-columns:1fr}
+  .cards{grid-template-columns:1fr 1fr}
+  .nav-links{display:none}
+  .nav-toggle{display:block;margin-left:auto}
+  .nav.open .nav-links{display:flex;position:absolute;top:64px;left:0;right:0;flex-direction:column;gap:0;background:rgba(4,7,13,.98);border-bottom:1px solid var(--line);padding:8px 24px 16px}
+  .nav.open .nav-links a{padding:12px 0;border-bottom:1px solid var(--line)}
+  .nav .ghost{display:none}
+}
+@media (max-width:620px){
+  .cards{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .hero{padding-top:48px}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= NAV ================= -->
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="BlinkTransfer home">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#070c15"/><g stroke="#22d3ee" stroke-width="3.4" fill="none" stroke-linecap="round"><path d="M15 32h7"/><path d="M42 32h7"/><path d="M28 23l9 9-9 9"/></g><circle cx="32" cy="32" r="2.6" fill="#eaf6ff"/></svg>
+      <b>BlinkTransfer</b><span>v2.0</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <nav class="nav-links" id="navLinks" aria-label="Primary">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#demo">Demo</a>
+      <a href="#start">Get started</a>
+      <a href="#faq">FAQ</a>
+      <a class="ghost" href="https://github.com/drsamonline/BLINKTRANSFER" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.94c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.2 1.77 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.78 1.05.78 2.12v3.14c0 .31.2.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        Source
+      </a>
+    </nav>
+  </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Air-gapped · Optical · No network</span>
+      <h1>Files at the speed of light.<br><span class="hl">No wires. No network.</span></h1>
+      <p class="lede">BlinkTransfer moves files between two devices using nothing but an animated stream of QR codes on one screen and a camera on the other — no internet, no Bluetooth, no cables.</p>
+
+      <div class="cta">
+        <a class="btn btn-primary" href="play/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9V3z"/></svg>
+          Open the app
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/drsamonline/BLINKTRANSFER" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.94c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.2 1.77 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.78 1.05.78 2.12v3.14c0 .31.2.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+          View source
+        </a>
+      </div>
+
+      <div class="badges">
+        <img src="https://img.shields.io/github/stars/drsamonline/BLINKTRANSFER?style=flat-square&amp;labelColor=04070d&amp;color=22d3ee" alt="GitHub stars" onerror="this.style.display='none'">
+        <img src="https://img.shields.io/github/last-commit/drsamonline/BLINKTRANSFER?style=flat-square&amp;labelColor=04070d&amp;color=22d3ee" alt="Last commit" onerror="this.style.display='none'">
+        <img src="https://img.shields.io/github/license/drsamonline/BLINKTRANSFER?style=flat-square&amp;labelColor=04070d&amp;color=22d3ee" alt="License" onerror="this.style.display='none'">
+        <img src="https://img.shields.io/github/languages/top/drsamonline/BLINKTRANSFER?style=flat-square&amp;labelColor=04070d&amp;color=22d3ee" alt="Top language" onerror="this.style.display='none'">
+        <span class="chip"><i></i>Offline-first</span>
+        <span class="chip"><i></i>PWA</span>
+        <span class="chip"><i></i>MIT</span>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><b>20 FPS</b><span>QR animation</span></div>
+        <div class="stat"><b>1600 B</b><span>per frame</span></div>
+        <div class="stat"><b>5 MB</b><span>max / file</span></div>
+        <div class="stat"><b>20 MB</b><span>max / batch</span></div>
+      </div>
+    </div>
+
+    <div class="hero-art reveal" aria-hidden="true">
+      <div class="cap"><span>OPTICAL BEAM</span><span class="live">● LIVE</span></div>
+      <svg viewBox="0 0 1200 460" role="img" aria-label="Animated diagram of a data beam carrying QR frames from a sender to a receiver">
+        <defs>
+          <linearGradient id="beamGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#22d3ee" stop-opacity="0"/>
+            <stop offset=".5" stop-color="#22d3ee" stop-opacity=".85"/>
+            <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="scanGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#22d3ee" stop-opacity="0"/>
+            <stop offset=".5" stop-color="#22d3ee" stop-opacity=".5"/>
+            <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
+          </linearGradient>
+          <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+            <path d="M48 0H0V48" fill="none" stroke="#16212f" stroke-width="1"/>
+          </pattern>
+          <filter id="glow2" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <rect width="1200" height="460" fill="#04070d"/>
+        <rect width="1200" height="460" fill="url(#grid)" opacity=".55"/>
+
+        <!-- scan bar -->
+        <g class="scanbar"><rect x="20" y="0" width="46" height="460" fill="url(#scanGrad)"/></g>
+
+        <!-- beam -->
+        <line class="beam-line" x1="290" y1="230" x2="910" y2="230" stroke="url(#beamGrad)" stroke-width="3" filter="url(#glow2)"/>
+        <line x1="290" y1="230" x2="910" y2="230" stroke="#0d3b47" stroke-width="1"/>
+
+        <!-- packets -->
+        <g transform="translate(300,222)" fill="#eaf6ff">
+          <rect class="pkt d1" x="0" y="0" width="16" height="16" rx="2"/>
+          <rect class="pkt d2" x="0" y="0" width="16" height="16" rx="2"/>
+          <rect class="pkt d3" x="0" y="0" width="16" height="16" rx="2"/>
+          <rect class="pkt d4" x="0" y="0" width="16" height="16" rx="2"/>
+          <rect class="pkt d5" x="0" y="0" width="16" height="16" rx="2"/>
+        </g>
+
+        <!-- TX node -->
+        <g>
+          <circle class="node-pulse" cx="200" cy="230" r="72" fill="none" stroke="#22d3ee" stroke-opacity=".25"/>
+          <rect x="140" y="170" width="120" height="120" rx="16" fill="#070c15" stroke="#22d3ee" stroke-width="1.6"/>
+          <g fill="#eaf6ff">
+            <rect x="164" y="194" width="26" height="26" rx="3"/><rect x="210" y="194" width="12" height="12" rx="2"/>
+            <rect x="164" y="240" width="26" height="26" rx="3"/><rect x="210" y="240" width="12" height="12" rx="2"/>
+            <rect x="240" y="194" width="12" height="12" rx="2"/><rect x="240" y="240" width="12" height="12" rx="2"/>
+          </g>
+          <text x="200" y="322" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="14" fill="#8296ab" letter-spacing="2">SENDER</text>
+          <text x="200" y="342" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="12" fill="#5d7089" letter-spacing="1">20 FPS · 1600 B</text>
+        </g>
+
+        <!-- RX node -->
+        <g>
+          <circle class="node-pulse" cx="1000" cy="230" r="72" fill="none" stroke="#eaf6ff" stroke-opacity=".18"/>
+          <rect x="940" y="170" width="120" height="120" rx="16" fill="#070c15" stroke="#eaf6ff" stroke-opacity=".5" stroke-width="1.6"/>
+          <circle cx="1000" cy="230" r="30" fill="none" stroke="#22d3ee" stroke-width="1.6"/>
+          <circle cx="1000" cy="230" r="13" fill="none" stroke="#eaf6ff" stroke-width="1.4"/>
+          <circle cx="1000" cy="230" r="4" fill="#22d3ee"/>
+          <path d="M940 170h20M940 170v20M1060 170h-20M1060 170v20M940 290h20M940 290v-20M1060 290h-20M1060 290v-20" stroke="#22d3ee" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+          <text x="1000" y="322" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="14" fill="#8296ab" letter-spacing="2">RECEIVER</text>
+          <text x="1000" y="342" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="12" fill="#5d7089" letter-spacing="1">CAMERA · DECODE</text>
+        </g>
+
+        <text x="600" y="150" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="13" fill="#22d3ee" letter-spacing="4">CRC-16 VERIFIED FRAMES</text>
+        <text x="600" y="392" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="12" fill="#5d7089" letter-spacing="3">PRACTICAL THROUGHPUT ≈ 30 KB/S</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= FEATURES ================= -->
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Capabilities</span>
+      <h2>Built to move data with nothing in between</h2>
+      <p>Everything BlinkTransfer does happens between two screens and a camera lens — no router, no pairing handshake, no cloud round-trip.</p>
+    </div>
+
+    <div class="cards">
+      <article class="card reveal">
+        <span class="tag">01</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8"/><path d="M2 12h20"/><path d="M4 16h16"/><path d="M7 20h10"/></svg></div>
+        <h3>Completely offline</h3>
+        <p>No internet, Bluetooth, or cables needed. The only channel is light from one screen into the other's camera — ideal for air-gapped or untrusted environments.</p>
+      </article>
+
+      <article class="card reveal">
+        <span class="tag">02</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h6"/></svg></div>
+        <h3>Animated QR at 20 FPS</h3>
+        <p>A stream of QR frames — 1600 bytes each — is rendered at 20 FPS, carrying 1573 bytes of data per frame plus a 27-byte header.</p>
+      </article>
+
+      <article class="card reveal">
+        <span class="tag">03</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 12h8M12 8v8"/></svg></div>
+        <h3>Smart compression</h3>
+        <p>Images are re-encoded as JPEG with adjustable quality (10–90%), while other files use Gzip via the CompressionStream API — so fewer frames are needed.</p>
+      </article>
+
+      <article class="card reveal">
+        <span class="tag">04</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg></div>
+        <h3>Multi-file sessions</h3>
+        <p>Send several files in a single session. Metadata travels in a header QR before the animated data stream begins.</p>
+      </article>
+
+      <article class="card reveal">
+        <span class="tag">05</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>CRC-16 checksums</h3>
+        <p>CRC-16 error detection runs on every QR frame, so a misread symbol is caught instead of corrupting the received file.</p>
+      </article>
+
+      <article class="card reveal">
+        <span class="tag">06</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg></div>
+        <h3>Installable PWA</h3>
+        <p>Installable and works offline after the first load, thanks to a service worker. The UI is mobile-optimised and responsive.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= HOW ================= -->
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Protocol</span>
+      <h2>How a transfer works</h2>
+      <p>One device transmits, the other receives. Both run the same app — pick a role and point the camera.</p>
+    </div>
+
+    <div class="how">
+      <div class="flow reveal">
+        <h3><span class="dot"></span>Sender</h3>
+        <ol class="steps">
+          <li>Select files <b>(multiple supported)</b>.</li>
+          <li>Adjust image quality if needed <b>(10–90%)</b>.</li>
+          <li>A focus-assist pattern displays for <b>2 seconds</b>.</li>
+          <li>A header QR shows the file metadata.</li>
+          <li>The animated data stream begins at <b>20 FPS</b>.</li>
+          <li>Keep the screen visible until the transfer completes.</li>
+        </ol>
+      </div>
+
+      <div class="flow reveal">
+        <h3><span class="dot rx"></span>Receiver</h3>
+        <ol class="steps">
+          <li>Tap <b>Receive</b> and grant camera permission.</li>
+          <li>Point the camera at the sender's QR code.</li>
+          <li>A progress bar shows the symbols collected.</li>
+          <li>When complete, tap <b>Save Files</b> to download.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= DEMO ================= -->
+<section id="demo">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Demo</span>
+      <h2>Two screens, one optical link</h2>
+      <p>The interface is deliberately minimal: a sender screen that animates QR frames, and a receiver screen that scans them and tracks progress.</p>
+    </div>
+
+    <div class="demo-grid">
+      <div class="shot reveal">
+        <img src="assets/app-preview.svg" alt="BlinkTransfer sender and receiver screens — an animated QR code on the sender and a camera viewfinder on the receiver, each with a progress bar" width="964" height="488">
+      </div>
+      <div class="reveal">
+        <ul class="demo-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><b style="color:var(--white)">No setup, no pairing.</b> Open the page on both devices and choose a role.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><b style="color:var(--white)">Live in the browser.</b> A Web Worker-friendly QR generator and the camera API do the work.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><b style="color:var(--white)">Runs offline.</b> Once loaded, the service worker serves the app without a network.</span></li>
+        </ul>
+        <a class="btn btn-primary" href="play/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+          Launch the demo
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= GET STARTED ================= -->
+<section id="start">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Get started</span>
+      <h2>Run it, or just open it</h2>
+      <p>The app is a static web page — open the hosted demo, or clone the repo and run it locally with Vite.</p>
+    </div>
+
+    <div class="start">
+      <div class="panel reveal">
+        <h3>Clone &amp; run</h3>
+        <pre><span class="c"># clone the repository</span>
+git clone https://github.com/drsamonline/BLINKTRANSFER.git
+cd BLINKTRANSFER
+
+<span class="c"># install dependencies</span>
+<span class="k">npm install</span>
+
+<span class="c"># development server on port 3000</span>
+<span class="k">npm run dev</span>
+
+<span class="c"># production build in dist/</span>
+<span class="k">npm run build</span>
+
+<span class="c"># preview the production build</span>
+<span class="k">npm run preview</span></pre>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <a class="btn btn-primary" href="play/">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+            Open the app
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/drsamonline/BLINKTRANSFER" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.94c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.2 1.77 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.78 1.05.78 2.12v3.14c0 .31.2.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+            Download / clone
+          </a>
+        </div>
+      </div>
+
+      <div class="panel reveal">
+        <h3>Limits &amp; throughput</h3>
+        <table class="tbl">
+          <tr><th>Spec</th><th>Value</th></tr>
+          <tr><td>Max per file</td><td>5 MB</td></tr>
+          <tr><td>Max total batch</td><td>20 MB</td></tr>
+          <tr><td>Practical speed</td><td>~30 KB/s (20 FPS × 1573 bytes)</td></tr>
+          <tr><td>QR payload</td><td>1600 bytes (1573 data + 27 header)</td></tr>
+          <tr><td>Header</td><td>Version · UUID · k · symbolIndex · CRC</td></tr>
+          <tr><td>Browsers</td><td>Chrome 80+, Firefox 114+, Safari 16+</td></tr>
+          <tr><td>Required APIs</td><td>CompressionStream, getUserMedia, wakeLock</td></tr>
+          <tr><td>License</td><td>MIT</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================= FAQ ================= -->
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-head reveal" style="margin-left:auto;margin-right:auto;text-align:center">
+      <span class="eyebrow" style="justify-content:center">FAQ</span>
+      <h2>Questions, answered</h2>
+    </div>
+
+    <div class="faq">
+      <details class="q" open>
+        <summary>Does BlinkTransfer need an internet connection?</summary>
+        <div class="a">No. It is completely offline — no internet, Bluetooth, or cables needed. The transfer channel is the sender's screen and the receiver's camera.</div>
+      </details>
+      <details class="q">
+        <summary>What are the file-size limits?</summary>
+        <div class="a">Up to 5 MB per file and 20 MB for a whole batch. Multiple files can be sent in one session.</div>
+      </details>
+      <details class="q">
+        <summary>How fast is a transfer?</summary>
+        <div class="a">Practical speed is roughly 30 KB/s — the animated QR stream runs at 20 FPS and each frame carries about 1573 bytes of data.</div>
+      </details>
+      <details class="q">
+        <summary>How does compression work?</summary>
+        <div class="a">Images are compressed as JPEG with adjustable quality (10–90%). Other files use Gzip through the CompressionStream API. Fewer bytes means fewer frames and a faster transfer.</div>
+      </details>
+      <details class="q">
+        <summary>Which browsers are supported?</summary>
+        <div class="a">Chrome 80+ (recommended), Firefox 114+, and Safari 16+. The app relies on the CompressionStream, getUserMedia, and wakeLock APIs.</div>
+      </details>
+      <details class="q">
+        <summary>Is it installable, and does it work offline?</summary>
+        <div class="a">Yes. It is a PWA: installable and works offline after the first load, thanks to a service worker that caches the app.</div>
+      </details>
+      <details class="q">
+        <summary>Is it free and open source?</summary>
+        <div class="a">Yes — BlinkTransfer is released under the MIT license, and the full source is on GitHub.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="#top" style="margin-bottom:10px">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#070c15"/><g stroke="#22d3ee" stroke-width="3.4" fill="none" stroke-linecap="round"><path d="M15 32h7"/><path d="M42 32h7"/><path d="M28 23l9 9-9 9"/></g><circle cx="32" cy="32" r="2.6" fill="#eaf6ff"/></svg>
+          <b>BlinkTransfer</b><span>v2.0</span>
+        </a>
+        <p style="max-width:38ch">Offline file transfer via animated QR codes.</p>
+      </div>
+      <div class="foot-links">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#demo">Demo</a>
+        <a href="#start">Get started</a>
+        <a href="#faq">FAQ</a>
+        <a href="https://github.com/drsamonline/BLINKTRANSFER" target="_blank" rel="noopener">GitHub repo ↗</a>
+      </div>
+    </div>
+    <div class="built">
+      <span>Built by <b>Dr. Sohil Momin</b> · MIT License</span>
+      <span>© <span id="year">2026</span> BlinkTransfer</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Footer year
+  var y = document.getElementById('year');
+  if (y) y.textContent = new Date().getFullYear();
+
+  // Mobile nav
+  var nav = document.getElementById('nav');
+  var t = document.getElementById('navToggle');
+  if (t) t.addEventListener('click', function(){
+    var open = nav.classList.toggle('open');
+    t.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  var links = document.getElementById('navLinks');
+  if (links) links.addEventListener('click', function(e){
+    if (e.target.tagName === 'A') { nav.classList.remove('open'); t.setAttribute('aria-expanded','false'); }
+  });
+
+  // Reveal on scroll
+  var els = document.querySelectorAll('.reveal');
+  if (reduce || !('IntersectionObserver' in window)) {
+    els.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    els.forEach(function(el){ io.observe(el); });
+  }
+
+  // Active nav link on scroll
+  var sections = ['features','how','demo','start','faq'];
+  var navA = Array.prototype.slice.call(document.querySelectorAll('.nav-links a[href^="#"]'));
+  function setActive(){
+    var pos = window.scrollY + 120, cur = '';
+    sections.forEach(function(id){
+      var el = document.getElementById(id);
+      if (el && el.offsetTop <= pos) cur = id;
+    });
+    navA.forEach(function(a){
+      a.classList.toggle('active', a.getAttribute('href') === '#' + cur);
+    });
+  }
+  window.addEventListener('scroll', setActive, { passive: true });
+  setActive();
+})();
+</script>
+</body>
+</html>

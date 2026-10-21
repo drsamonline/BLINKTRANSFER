@@ -1,3 +1,20 @@
+<div align="center">
+
+# ⚡ BlinkTransfer
+
+**Offline file transfer via animated QR codes — no internet, no Bluetooth, no cables.**
+
+[![Stars](https://img.shields.io/github/stars/drsamonline/BLINKTRANSFER?style=flat-square&labelColor=04070d&color=22d3ee)](https://github.com/drsamonline/BLINKTRANSFER/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/drsamonline/BLINKTRANSFER?style=flat-square&labelColor=04070d&color=22d3ee)](https://github.com/drsamonline/BLINKTRANSFER/commits)
+[![License](https://img.shields.io/github/license/drsamonline/BLINKTRANSFER?style=flat-square&labelColor=04070d&color=22d3ee)](https://github.com/drsamonline/BLINKTRANSFER/blob/main/LICENSE)
+[![Top language](https://img.shields.io/github/languages/top/drsamonline/BLINKTRANSFER?style=flat-square&labelColor=04070d&color=22d3ee)](https://github.com/drsamonline/BLINKTRANSFER)
+
+**Landing page:** [drsamonline.github.io/BLINKTRANSFER](https://drsamonline.github.io/BLINKTRANSFER/) · **Live demo:** [open the app](https://drsamonline.github.io/BLINKTRANSFER/play/) · **Download:** [clone the repo](https://github.com/drsamonline/BLINKTRANSFER)
+
+</div>
+
+---
+
 # ✨ BlinkTransfer v2.0
 
 **Offline file transfer via animated QR codes**

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="118 46 964 488" width="964" height="488" role="img" aria-label="BlinkTransfer app screens: sender showing an animated QR code and receiver scanning it">
+  <defs>
+    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#22d3ee" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="scr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#111a2b"/>
+      <stop offset="1" stop-color="#0b1220"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect x="118" y="46" width="964" height="488" fill="#04070d"/>
+
+  <!-- beam between phones -->
+  <g opacity=".95">
+    <path d="M470 300 H730" stroke="url(#beam)" stroke-width="3" filter="url(#glow)"/>
+    <g fill="#eaf6ff">
+      <rect x="480" y="295" width="14" height="10" rx="2" opacity=".9"/>
+      <rect x="560" y="295" width="14" height="10" rx="2" opacity=".65"/>
+      <rect x="640" y="295" width="14" height="10" rx="2" opacity=".8"/>
+    </g>
+    <text x="600" y="270" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="15" fill="#22d3ee" letter-spacing="3">OPTICAL LINK · 20 FPS</text>
+  </g>
+
+  <!-- SENDER PHONE -->
+  <g>
+    <rect x="150" y="70" width="300" height="420" rx="34" fill="#05080f" stroke="#22d3ee" stroke-opacity=".55" stroke-width="2"/>
+    <rect x="166" y="86" width="268" height="388" rx="24" fill="url(#scr)"/>
+    <text x="300" y="126" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="16" fill="#eaf6ff" letter-spacing="2">BLINKTRANSFER</text>
+    <text x="300" y="150" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="12" fill="#7d8fa3" letter-spacing="2">SENDING</text>
+    <!-- QR -->
+    <rect x="205" y="172" width="190" height="190" rx="8" fill="#eaf6ff"/>
+    <g fill="#04070d">
+      <rect x="217" y="184" width="46" height="46"/><rect x="273" y="184" width="14" height="14"/>
+      <rect x="337" y="184" width="46" height="46"/><rect x="217" y="350" width="46" height="46"/>
+      <rect x="295" y="200" width="14" height="14"/><rect x="325" y="228" width="14" height="14"/>
+      <rect x="355" y="200" width="14" height="14"/><rect x="295" y="256" width="14" height="14"/>
+      <rect x="239" y="256" width="14" height="14"/><rect x="267" y="284" width="14" height="14"/>
+      <rect x="323" y="284" width="14" height="14"/><rect x="351" y="312" width="14" height="14"/>
+      <rect x="295" y="312" width="14" height="14"/><rect x="239" y="312" width="14" height="14"/>
+      <rect x="267" y="340" width="14" height="14"/><rect x="323" y="340" width="14" height="14"/>
+      <rect x="351" y="256" width="14" height="14"/><rect x="217" y="284" width="14" height="14"/>
+    </g>
+    <rect x="205" y="386" width="190" height="8" rx="4" fill="#182236"/>
+    <rect x="205" y="386" width="122" height="8" rx="4" fill="#22d3ee"/>
+    <text x="300" y="420" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#7d8fa3">64% · 1600 B / FRAME</text>
+    <text x="300" y="446" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="12" fill="#7d8fa3">KEEP SCREEN VISIBLE</text>
+  </g>
+
+  <!-- RECEIVER PHONE -->
+  <g>
+    <rect x="750" y="70" width="300" height="420" rx="34" fill="#05080f" stroke="#eaf6ff" stroke-opacity=".35" stroke-width="2"/>
+    <rect x="766" y="86" width="268" height="388" rx="24" fill="url(#scr)"/>
+    <text x="900" y="126" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="16" fill="#eaf6ff" letter-spacing="2">BLINKTRANSFER</text>
+    <text x="900" y="150" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="12" fill="#7d8fa3" letter-spacing="2">RECEIVING</text>
+    <!-- viewfinder -->
+    <rect x="805" y="172" width="190" height="190" rx="10" fill="#0a0f1a" stroke="#22d3ee" stroke-opacity=".25"/>
+    <g stroke="#22d3ee" stroke-width="3" fill="none" stroke-linecap="round">
+      <path d="M817 840"/><path d="M817 197 h20 M817 197 v20"/>
+      <path d="M983 197 h-20 M983 197 v20"/>
+      <path d="M817 337 v-20 M817 337 h20"/>
+      <path d="M983 337 h-20 M983 337 v-20"/>
+    </g>
+    <!-- small QR in viewfinder -->
+    <g fill="#eaf6ff" opacity=".92">
+      <rect x="866" y="233" width="68" height="68" rx="4"/>
+    </g>
+    <g fill="#0a0f1a">
+      <rect x="874" y="241" width="20" height="20"/><rect x="906" y="241" width="6" height="6"/>
+      <rect x="874" y="273" width="20" height="20"/><rect x="906" y="273" width="6" height="6"/>
+      <rect x="896" y="257" width="6" height="6"/><rect x="914" y="265" width="6" height="6"/>
+      <rect x="888" y="289" width="6" height="6"/><rect x="906" y="289" width="6" height="6"/>
+    </g>
+    <rect x="805" y="386" width="190" height="8" rx="4" fill="#182236"/>
+    <rect x="805" y="386" width="140" height="8" rx="4" fill="#22d3ee"/>
+    <text x="900" y="420" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#7d8fa3">SYMBOLS 118 / 160</text>
+    <text x="900" y="446" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="12" fill="#7d8fa3">POINT CAMERA AT QR</text>
+  </g>
+</svg>
