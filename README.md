@@ -9,7 +9,7 @@
 [![License: not specified](https://img.shields.io/badge/license-not%20specified-lightgrey)](https://github.com/drsamonline/BLINKTRANSFER)
 [![Top language](https://img.shields.io/github/languages/top/drsamonline/BLINKTRANSFER)](https://github.com/drsamonline/BLINKTRANSFER)
 
-**Landing page:** [drsamonline.github.io/BLINKTRANSFER](https://drsamonline.github.io/BLINKTRANSFER/) · **Live demo:** [open the app](https://drsamonline.github.io/BLINKTRANSFER/play/) · **Download:** [clone the repo](https://github.com/drsamonline/BLINKTRANSFER)
+**Landing page:** [drsamonline.github.io/BLINKTRANSFER](https://drsamonline.github.io/BLINKTRANSFER/) · **Live demo:** [open the app](https://drsamonline.github.io/BLINKTRANSFER/play/) · **Download:** [clone the repo](https://github.com/drsamonline/BLINKTRANSFER) · **All projects:** [drsamonline.github.io](https://drsamonline.github.io/)
 
 **Download:** [Windows (.exe)](https://github.com/drsamonline/BLINKTRANSFER/releases/latest/download/BLINKTRANSFER-portable.exe) &nbsp;·&nbsp; [Android (.apk)](https://github.com/drsamonline/BLINKTRANSFER/releases/latest/download/BLINKTRANSFER.apk)
 
