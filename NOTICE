@@ -1,0 +1,35 @@
+# Third-party notices
+
+BlinkTransfer bundles the following components. Their licences are reproduced or
+referenced here as required.
+
+## qrcode-generator
+
+- Version: 2.0.4
+- Licence: MIT
+- https://github.com/kazuhikoarase/qrcode-generator
+- Copyright (c) Kazuhiko Arase. Used to render QR codes.
+
+## jsQR
+
+- Version: 1.4.0
+- Licence: Apache License 2.0
+- https://github.com/cozmo/jsQR
+- Copyright (c) Cosmo Wolfe. Used to decode QR codes from camera frames.
+
+## esbuild (development only)
+
+- Licence: MIT
+- https://github.com/evanw/esbuild
+- Used to bundle the app at build time. Not shipped in the product.
+
+## eslint (development only)
+
+- Licence: MIT
+- https://github.com/eslint/eslint
+- Used for linting. Not shipped in the product.
+
+---
+
+The bundled libraries keep their own licences; the PolyForm Noncommercial
+licence in `LICENSE` applies to BlinkTransfer's own code.

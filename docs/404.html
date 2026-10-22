@@ -1,50 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>404 — Signal lost · BlinkTransfer</title>
-<meta name="robots" content="noindex, follow">
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Not found — BlinkTransfer</title>
 <style>
-  :root{--bg:#04070d;--cyan:#22d3ee;--white:#eaf6ff;--muted:#8296ab;--line:#16212f;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-  *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--white);
-    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;text-align:center;padding:24px;
-    background-image:radial-gradient(900px 460px at 50% -10%,rgba(34,211,238,.16),transparent 62%),
-      linear-gradient(rgba(34,211,238,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.045) 1px,transparent 1px);
-    background-size:auto,64px 64px,64px 64px}
-  .card{border:1px solid var(--line);border-radius:20px;background:linear-gradient(180deg,#070c15,#04070d);padding:44px 40px;max-width:560px}
-  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--cyan)}
-  h1{font-size:clamp(3rem,12vw,5rem);margin:12px 0 6px;font-weight:800;letter-spacing:-.03em;
-    background:linear-gradient(100deg,#eaf6ff,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-  p{color:var(--muted);margin:0 0 26px}
-  a.btn{display:inline-flex;align-items:center;gap:10px;border-radius:12px;padding:13px 22px;font-weight:600;
-    text-decoration:none;color:#03212a;background:linear-gradient(180deg,#22d3ee,#0fb6d4);
-    box-shadow:0 0 0 1px rgba(34,211,238,.5),0 12px 36px -14px rgba(34,211,238,.9)}
-  a.btn svg{width:18px;height:18px}
-  .beam{width:100%;max-width:420px;height:56px;margin:6px auto 18px;display:block}
-  @keyframes dash{to{stroke-dashoffset:-200}}
-  .flow{stroke-dasharray:8 12;animation:dash 3.4s linear infinite}
-  @media (prefers-reduced-motion: reduce){.flow{animation:none}}
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0b1020; color: #eef2ff;
+         font-family: ui-sans-serif, system-ui, sans-serif; text-align: center; padding: 24px; }
+  a { color: #a5b4fc; }
+  h1 { font-size: 3rem; margin: 0 0 8px; }
 </style>
 </head>
 <body>
-  <main class="card">
-    <span class="eyebrow">Error 404 · Signal lost</span>
-    <svg class="beam" viewBox="0 0 420 56" aria-hidden="true">
-      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stop-color="#22d3ee" stop-opacity="0"/><stop offset=".5" stop-color="#22d3ee"/>
-        <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>
-      <line class="flow" x1="10" y1="28" x2="410" y2="28" stroke="url(#g)" stroke-width="3"/>
-      <circle cx="10" cy="28" r="4" fill="#eaf6ff"/><circle cx="410" cy="28" r="4" fill="#eaf6ff"/>
-    </svg>
+  <div>
     <h1>404</h1>
-    <p>This frame never arrived. The page you were looking for isn't part of the beam.</p>
-    <a class="btn" href="/BLINKTRANSFER/">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-      Back to BlinkTransfer
-    </a>
-  </main>
+    <p>That page is not here.</p>
+    <p><a href="./">Back to BlinkTransfer</a> · <a href="./play/">Open the app</a></p>
+  </div>
 </body>
 </html>

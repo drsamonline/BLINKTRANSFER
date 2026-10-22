@@ -1,14 +1,39 @@
 {
   "name": "blinktransfer",
-  "version": "2.0.0",
-  "description": "Offline file transfer via animated QR codes with fountain codes",
+  "version": "3.0.0",
+  "description": "Offline file transfer over animated QR codes — rateless (fountain) coded, no network, no cables.",
   "type": "module",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Dr Sohil Momin (https://github.com/drsamonline)",
+  "homepage": "https://drsamonline.github.io/BLINKTRANSFER/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/drsamonline/BLINKTRANSFER.git"
+  },
+  "keywords": [
+    "qr",
+    "offline",
+    "file-transfer",
+    "fountain-code",
+    "pwa",
+    "air-gapped"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "node tools/dev.mjs",
+    "build": "node tools/build.mjs",
+    "serve": "node tools/serve.js",
+    "test": "node --test tests/",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "jsqr": "^1.4.0",
+    "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
-    "vite": "^5.4.0"
+    "esbuild": "^0.23.0",
+    "eslint": "^9.15.0"
   }
 }
