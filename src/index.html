@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#6366f1" />
+  <meta name="description" content="BlinkTransfer — offline file transfer over animated QR codes. No internet, no Bluetooth, no cables." />
+  <title>BlinkTransfer</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./icon-192.svg" />
+  <link rel="apple-touch-icon" href="./icon-192.svg" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <canvas id="focusCanvas" aria-hidden="true"></canvas>
+
+  <header class="topbar">
+    <button class="ghost-btn" id="backBtn" hidden aria-label="Back">&#8592;</button>
+    <div class="brand"><span class="brand-mark">&#9889;</span> BlinkTransfer</div>
+    <a class="ghost-btn" href="https://github.com/drsamonline/BLINKTRANSFER" target="_blank" rel="noopener" aria-label="GitHub">&#9737;</a>
+  </header>
+
+  <main class="wrap">
+    <!-- HOME -->
+    <section id="screen-home" class="screen active">
+      <h1 class="hero">Send a file<br /><span>with light.</span></h1>
+      <p class="lede">Animated QR codes, rateless-coded so a missed frame never breaks the transfer. Completely offline.</p>
+
+      <div class="mode-grid">
+        <button class="mode-card send" id="goSend">
+          <span class="mode-icon">&#8679;</span>
+          <span class="mode-title">Send</span>
+          <span class="mode-sub">Pick files, show the code</span>
+        </button>
+        <button class="mode-card receive" id="goReceive">
+          <span class="mode-icon">&#8681;</span>
+          <span class="mode-title">Receive</span>
+          <span class="mode-sub">Point a camera at the code</span>
+        </button>
+      </div>
+
+      <ul class="facts">
+        <li><strong>Offline</strong><span>no network, Bluetooth or cables</span></li>
+        <li><strong>Rateless</strong><span>missed frames cost nothing</span></li>
+        <li><strong>Any scanner</strong><span>tiny files are plain QR</span></li>
+      </ul>
+    </section>
+
+    <!-- SEND -->
+    <section id="screen-send" class="screen">
+      <div class="card">
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" multiple hidden />
+          <div class="dz-icon">&#128193;</div>
+          <p><strong>Choose files</strong> or drop them here</p>
+          <p class="muted">Up to 20&nbsp;MB total &middot; images are re-compressed</p>
+          <button class="btn primary" id="pickBtn">Select files</button>
+        </div>
+        <div class="filelist" id="fileList"></div>
+      </div>
+
+      <div class="card options">
+        <label class="field">
+          <span>Code density</span>
+          <select id="preset">
+            <option value="robust">Robust — small codes, easiest to scan</option>
+            <option value="balanced" selected>Balanced — the default</option>
+            <option value="dense">Dense — fewest frames</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Frames per second <b id="fpsLabel">12</b></span>
+          <input type="range" id="fps" min="2" max="24" value="12" />
+        </label>
+        <label class="switch">
+          <input type="checkbox" id="plainMode" />
+          <span>Compatibility mode — one plain QR any scanner can read (small text only)</span>
+        </label>
+        <div class="stats" id="sendStats" hidden></div>
+        <button class="btn primary wide" id="startSend" disabled>Start transfer</button>
+      </div>
+    </section>
+
+    <!-- SEND — SHOWING -->
+    <section id="screen-show" class="screen">
+      <div class="qr-stage">
+        <canvas id="qrCanvas" width="840" height="840"></canvas>
+      </div>
+      <div class="progress">
+        <div class="bar"><i id="sendBar"></i></div>
+        <div class="progress-meta"><span id="sendMeta">Preparing…</span><span id="sendPct">0%</span></div>
+      </div>
+      <button class="btn danger wide" id="stopSend">Stop</button>
+    </section>
+
+    <!-- RECEIVE -->
+    <section id="screen-receive" class="screen">
+      <div class="camera">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="reticle"></div>
+      </div>
+      <div class="progress">
+        <div class="bar"><i id="recvBar"></i></div>
+        <div class="progress-meta"><span id="recvMeta">Point the camera at the sender's code</span><span id="recvPct">0%</span></div>
+      </div>
+      <div class="results" id="results" hidden></div>
+      <div class="row">
+        <button class="btn ghost" id="stopRecv">Stop</button>
+        <button class="btn primary" id="saveAll" hidden>Save all</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

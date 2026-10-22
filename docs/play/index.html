@@ -1,275 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#6366f1">
-  <meta name="description" content="Transfer files offline via QR codes">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#6366f1" />
+  <meta name="description" content="BlinkTransfer — offline file transfer over animated QR codes. No internet, no Bluetooth, no cables." />
   <title>BlinkTransfer</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="icon-192.svg">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    :root {
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --success: #22c55e;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, var(--bg) 0%, #1e1b4b 100%);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-    }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; flex: 1; display: flex; flex-direction: column; }
-    header { text-align: center; padding: 30px 0 20px; }
-    h1 { font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-    .subtitle { color: var(--text-muted); font-size: 1rem; }
-    .mode-select { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 30px 0; }
-    .btn {
-      padding: 24px 20px; border: none; border-radius: 16px; font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; overflow: hidden;
-    }
-    .btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent); opacity: 0; transition: opacity 0.3s; }
-    .btn:hover::before { opacity: 1; }
-    .btn:active { transform: scale(0.98); }
-    .btn-send { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4); }
-    .btn-receive { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; box-shadow: 0 10px 40px rgba(34, 197, 94, 0.4); }
-    .btn-icon { width: 48px; height: 48px; }
-    .screen { display: none; flex: 1; flex-direction: column; }
-    .screen.active { display: flex; }
-    .qr-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; background: var(--surface); border-radius: 20px; margin: 20px 0; overflow: hidden; }
-    #qrCanvas { max-width: 100%; max-height: 60vh; image-rendering: pixelated; }
-    .camera-container { flex: 1; position: relative; background: #000; border-radius: 20px; overflow: hidden; margin: 20px 0; }
-    #video { width: 100%; height: 100%; object-fit: cover; }
-    .overlay { position: absolute; inset: 0; pointer-events: none; }
-    .scan-guide { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 280px; border: 3px solid rgba(255,255,255,0.5); border-radius: 20px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); }
-    .scan-guide::before { content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px; border: 3px solid transparent; border-radius: 20px; background: linear-gradient(135deg, var(--primary), var(--success)) border-box; -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-    .progress-container { background: var(--surface); border-radius: 16px; padding: 20px; margin: 16px 0; }
-    .progress-bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin: 12px 0; }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--success)); border-radius: 4px; transition: width 0.3s ease; }
-    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center; }
-    .stat { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; }
-    .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
-    .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
-    .file-info { background: var(--surface); border-radius: 16px; padding: 20px; margin: 16px 0; }
-    .file-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 8px; }
-    .file-icon { font-size: 1.5rem; }
-    .file-details { flex: 1; }
-    .file-name { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .file-meta { font-size: 0.8rem; color: var(--text-muted); }
-    .actions { display: flex; gap: 12px; margin-top: 20px; }
-    .btn-small { padding: 12px 24px; border-radius: 12px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.3s; flex: 1; }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-secondary { background: rgba(255,255,255,0.1); color: var(--text); }
-    .btn-danger { background: var(--danger); color: white; }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-    .modal-overlay.active { display: flex; }
-    .modal { background: var(--surface); border-radius: 20px; padding: 30px; max-width: 400px; width: 100%; max-height: 90vh; overflow-y: auto; }
-    .modal h2 { font-size: 1.5rem; margin-bottom: 20px; }
-    .quality-slider { width: 100%; margin: 20px 0; }
-    .quality-preview { text-align: center; color: var(--text-muted); margin: 12px 0; }
-    .permission-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 16px; margin: 16px 0; }
-    .permission-item { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
-    .permission-icon { width: 40px; height: 40px; background: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--surface); padding: 16px 24px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 2000; transition: transform 0.3s ease; max-width: 90%; }
-    .toast.show { transform: translateX(-50%) translateY(0); }
-    .toast-success { border-left: 4px solid var(--success); }
-    .toast-error { border-left: 4px solid var(--danger); }
-    .toast-warning { border-left: 4px solid var(--warning); }
-    .hidden { display: none !important; }
-    #focusCanvas { position: fixed; inset: 0; z-index: 999; display: none; }
-    #focusCanvas.active { display: block; }
-    input[type="file"] { display: none; }
-    .back-btn { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.1); border: none; color: var(--text); padding: 12px; border-radius: 12px; cursor: pointer; z-index: 100; }
-    .status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-top: 8px; }
-    .status-sending { background: rgba(99, 102, 241, 0.2); color: var(--primary); }
-    .status-receiving { background: rgba(34, 197, 94, 0.2); color: var(--success); }
-    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-    .empty-state-icon { font-size: 4rem; margin-bottom: 20px; opacity: 0.5; }
-  </style>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./icon-192.svg" />
+  <link rel="apple-touch-icon" href="./icon-192.svg" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <canvas id="focusCanvas"></canvas>
-  
-  <div class="container">
-    <header>
-      <h1>✨ BlinkTransfer</h1>
-      <p class="subtitle">Offline file transfer via QR codes</p>
-    </header>
+  <canvas id="focusCanvas" aria-hidden="true"></canvas>
 
-    <!-- Home Screen -->
-    <div id="homeScreen" class="screen active">
-      <div class="mode-select">
-        <button class="btn btn-send" onclick="app.selectFiles()">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 19V5M5 12l7-7 7 7"/>
-          </svg>
-          Send Files
+  <header class="topbar">
+    <button class="ghost-btn" id="backBtn" hidden aria-label="Back">&#8592;</button>
+    <div class="brand"><span class="brand-mark">&#9889;</span> BlinkTransfer</div>
+    <a class="ghost-btn" href="https://github.com/drsamonline/BLINKTRANSFER" target="_blank" rel="noopener" aria-label="GitHub">&#9737;</a>
+  </header>
+
+  <main class="wrap">
+    <!-- HOME -->
+    <section id="screen-home" class="screen active">
+      <h1 class="hero">Send a file<br /><span>with light.</span></h1>
+      <p class="lede">Animated QR codes, rateless-coded so a missed frame never breaks the transfer. Completely offline.</p>
+
+      <div class="mode-grid">
+        <button class="mode-card send" id="goSend">
+          <span class="mode-icon">&#8679;</span>
+          <span class="mode-title">Send</span>
+          <span class="mode-sub">Pick files, show the code</span>
         </button>
-        <button class="btn btn-receive" onclick="app.startReceive()">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-          </svg>
-          Receive
+        <button class="mode-card receive" id="goReceive">
+          <span class="mode-icon">&#8681;</span>
+          <span class="mode-title">Receive</span>
+          <span class="mode-sub">Point a camera at the code</span>
         </button>
       </div>
-      
-      <div class="permission-card" id="permissionCard">
-        <h3 style="margin-bottom: 16px;">🔐 Permissions Needed</h3>
-        <div class="permission-item">
-          <div class="permission-icon">📷</div>
-          <div>
-            <strong>Camera</strong>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">Required to scan QR codes when receiving</p>
-          </div>
+
+      <ul class="facts">
+        <li><strong>Offline</strong><span>no network, Bluetooth or cables</span></li>
+        <li><strong>Rateless</strong><span>missed frames cost nothing</span></li>
+        <li><strong>Any scanner</strong><span>tiny files are plain QR</span></li>
+      </ul>
+    </section>
+
+    <!-- SEND -->
+    <section id="screen-send" class="screen">
+      <div class="card">
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" multiple hidden />
+          <div class="dz-icon">&#128193;</div>
+          <p><strong>Choose files</strong> or drop them here</p>
+          <p class="muted">Up to 20&nbsp;MB total &middot; images are re-compressed</p>
+          <button class="btn primary" id="pickBtn">Select files</button>
         </div>
-        <div class="permission-item">
-          <div class="permission-icon">💾</div>
-          <div>
-            <strong>Storage</strong>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">Browser will ask to save received files</p>
-          </div>
-        </div>
-        <button class="btn-small btn-primary" style="width: 100%; margin-top: 16px;" onclick="app.requestPermissions()">Grant Permissions</button>
+        <div class="filelist" id="fileList"></div>
       </div>
 
-      <div style="text-align: center; margin-top: 30px; color: var(--text-muted); font-size: 0.9rem;">
-        <p>Max 5 MB per file • Works completely offline</p>
-        <p style="margin-top: 8px;">No internet • No Bluetooth • No cables</p>
+      <div class="card options">
+        <label class="field">
+          <span>Code density</span>
+          <select id="preset">
+            <option value="robust">Robust — small codes, easiest to scan</option>
+            <option value="balanced" selected>Balanced — the default</option>
+            <option value="dense">Dense — fewest frames</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Frames per second <b id="fpsLabel">12</b></span>
+          <input type="range" id="fps" min="2" max="24" value="12" />
+        </label>
+        <label class="switch">
+          <input type="checkbox" id="plainMode" />
+          <span>Compatibility mode — one plain QR any scanner can read (small text only)</span>
+        </label>
+        <div class="stats" id="sendStats" hidden></div>
+        <button class="btn primary wide" id="startSend" disabled>Start transfer</button>
       </div>
-    </div>
+    </section>
 
-    <!-- Send Screen -->
-    <div id="sendScreen" class="screen">
-      <button class="back-btn" onclick="app.goHome()">← Back</button>
-      <h2 style="text-align: center; margin: 20px 0;">Sending Files</h2>
-      
-      <div id="sendFileList" class="file-info"></div>
-      
-      <div class="qr-container">
-        <canvas id="qrCanvas"></canvas>
-        <div id="sendEmpty" class="empty-state">
-          <div class="empty-state-icon">📤</div>
-          <p>Select files to send</p>
-        </div>
+    <!-- SEND — SHOWING -->
+    <section id="screen-show" class="screen">
+      <div class="qr-stage">
+        <canvas id="qrCanvas" width="840" height="840"></canvas>
       </div>
-
-      <div id="sendStatus" class="progress-container hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span class="status-badge status-sending">Transmitting...</span>
-          <span id="sendProgressText">0%</span>
-        </div>
-        <div class="progress-bar">
-          <div id="sendProgressBar" class="progress-fill" style="width: 0%"></div>
-        </div>
-        <div class="stats">
-          <div class="stat">
-            <div id="statSymbols" class="stat-value">0</div>
-            <div class="stat-label">Symbols</div>
-          </div>
-          <div class="stat">
-            <div id="statSize" class="stat-value">0 KB</div>
-            <div class="stat-label">Total Size</div>
-          </div>
-          <div class="stat">
-            <div id="statTime" class="stat-value">--:--</div>
-            <div class="stat-label">Est. Time</div>
-          </div>
-        </div>
+      <div class="progress">
+        <div class="bar"><i id="sendBar"></i></div>
+        <div class="progress-meta"><span id="sendMeta">Preparing…</span><span id="sendPct">0%</span></div>
       </div>
+      <button class="btn danger wide" id="stopSend">Stop</button>
+    </section>
 
-      <div class="actions" id="sendActions">
-        <button class="btn-small btn-secondary" onclick="app.selectFiles()">Change Files</button>
-        <button class="btn-small btn-primary" id="startSendBtn" onclick="app.startSend()" disabled>Start Transfer</button>
-      </div>
-    </div>
-
-    <!-- Receive Screen -->
-    <div id="receiveScreen" class="screen">
-      <button class="back-btn" onclick="app.goHome()">← Back</button>
-      <h2 style="text-align: center; margin: 20px 0;">Receiving Files</h2>
-      
-      <div class="camera-container">
+    <!-- RECEIVE -->
+    <section id="screen-receive" class="screen">
+      <div class="camera">
         <video id="video" autoplay playsinline muted></video>
-        <div class="overlay">
-          <div class="scan-guide"></div>
-        </div>
+        <div class="reticle"></div>
       </div>
-
-      <div id="receiveStatus" class="progress-container hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span class="status-badge status-receiving">Receiving...</span>
-          <span id="receiveProgressText">0%</span>
-        </div>
-        <div class="progress-bar">
-          <div id="receiveProgressBar" class="progress-fill" style="width: 0%"></div>
-        </div>
-        <div class="stats">
-          <div class="stat">
-            <div id="statCollected" class="stat-value">0</div>
-            <div class="stat-label">Collected</div>
-          </div>
-          <div class="stat">
-            <div id="statNeeded" class="stat-value">0</div>
-            <div class="stat-label">Needed</div>
-          </div>
-          <div class="stat">
-            <div id="statFiles" class="stat-value">0</div>
-            <div class="stat-label">Files</div>
-          </div>
-        </div>
+      <div class="progress">
+        <div class="bar"><i id="recvBar"></i></div>
+        <div class="progress-meta"><span id="recvMeta">Point the camera at the sender's code</span><span id="recvPct">0%</span></div>
       </div>
-
-      <div id="receiveInfo" class="file-info hidden"></div>
-
-      <div class="actions hidden" id="receiveActions">
-        <button class="btn-small btn-secondary" onclick="app.stopReceive()">Stop</button>
-        <button class="btn-small btn-primary" onclick="app.downloadFiles()">Save Files</button>
+      <div class="results" id="results" hidden></div>
+      <div class="row">
+        <button class="btn ghost" id="stopRecv">Stop</button>
+        <button class="btn primary" id="saveAll" hidden>Save all</button>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
-  <!-- Quality Modal -->
-  <div id="qualityModal" class="modal-overlay">
-    <div class="modal">
-      <h2>📸 Image Quality</h2>
-      <p style="color: var(--text-muted);">Adjust compression quality for faster transfer</p>
-      <input type="range" id="qualitySlider" class="quality-slider" min="10" max="90" value="60">
-      <div class="quality-preview">Quality: <span id="qualityValue">60</span>%</div>
-      <div style="display: flex; gap: 12px; margin-top: 24px;">
-        <button class="btn-small btn-secondary" style="flex: 1;" onclick="app.cancelQuality()">Cancel</button>
-        <button class="btn-small btn-primary" style="flex: 1;" onclick="app.confirmQuality()">Continue</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Download Modal -->
-  <div id="downloadModal" class="modal-overlay">
-    <div class="modal">
-      <h2>✅ Transfer Complete!</h2>
-      <div id="downloadFileList" class="file-info"></div>
-      <div style="display: flex; gap: 12px; margin-top: 24px;">
-        <button class="btn-small btn-secondary" style="flex: 1;" onclick="app.closeDownloadModal()">Close</button>
-        <button class="btn-small btn-primary" style="flex: 1;" onclick="app.downloadAll()">Download All</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast -->
-  <div id="toast" class="toast"></div>
-
-  <input type="file" id="fileInput" multiple accept="*/*">
-
-  <script type="module" src="src/main.js"></script>
+  <div class="toast" id="toast"></div>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>
