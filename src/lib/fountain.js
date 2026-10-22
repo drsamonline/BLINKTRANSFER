@@ -33,7 +33,9 @@ export function degreeCDF(k, c = DEFAULT_C, delta = DEFAULT_DELTA) {
   const tau = new Float64Array(k + 1);
   const kr = Math.max(1, Math.min(k, Math.round(k / R)));
   for (let d = 1; d < kr; d++) tau[d] = R / (d * k);
-  tau[kr] += (R * Math.log(R / delta)) / k;
+  // R/delta < 1 for small k makes the spike term negative; clamp it, or the
+  // negative mass corrupts the distribution and inflates overhead badly.
+  tau[kr] += Math.max(0, (R * Math.log(R / delta)) / k);
 
   const cdf = new Float64Array(k + 1);
   let sum = 0;
@@ -49,6 +51,7 @@ export function degreeCDF(k, c = DEFAULT_C, delta = DEFAULT_DELTA) {
 
 /** Degree of the symbol with this id. Deterministic on both sides. */
 export function degreeFor(symbolId, k, c = DEFAULT_C, delta = DEFAULT_DELTA) {
+  if (symbolId < k) return 1; // systematic prefix
   const cdf = degreeCDF(k, c, delta);
   const rng = createPRNG((symbolId ^ 0x9e3779b9) >>> 0);
   const u = rng();
@@ -64,6 +67,9 @@ export function degreeFor(symbolId, k, c = DEFAULT_C, delta = DEFAULT_DELTA) {
 
 /** The distinct source-block indices XORed into symbol `symbolId`. */
 export function indicesFor(symbolId, k, c = DEFAULT_C, delta = DEFAULT_DELTA) {
+  // Systematic prefix: symbols 0..k-1 are the raw blocks, so a clean pass needs
+  // exactly k symbols; symbols >= k are fountain repairs for anything missed.
+  if (symbolId < k) return [symbolId];
   const d = Math.min(k, degreeFor(symbolId, k, c, delta));
   const rng = createPRNG((symbolId ^ 0x85ebca6b) >>> 0);
   const picked = new Set();
