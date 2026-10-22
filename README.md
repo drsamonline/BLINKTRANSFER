@@ -11,6 +11,8 @@
 
 **Landing page:** [drsamonline.github.io/BLINKTRANSFER](https://drsamonline.github.io/BLINKTRANSFER/) · **Live demo:** [open the app](https://drsamonline.github.io/BLINKTRANSFER/play/) · **Download:** [clone the repo](https://github.com/drsamonline/BLINKTRANSFER)
 
+**Download:** [Windows (.exe)](https://github.com/drsamonline/BLINKTRANSFER/releases/latest/download/BLINKTRANSFER-portable.exe) &nbsp;·&nbsp; [Android (.apk)](https://github.com/drsamonline/BLINKTRANSFER/releases/latest/download/BLINKTRANSFER.apk)
+
 </div>
 
 ---
