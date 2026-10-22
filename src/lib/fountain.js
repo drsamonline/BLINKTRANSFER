@@ -1,196 +1,111 @@
-// Luby Transform (LT) fountain codes.
+// Luby Transform (LT) fountain codes — delegated to the shared `optical-kit`.
 //
 // A fountain code turns k source blocks into an endless stream of encoded
 // symbols. The receiver can rebuild the source from *any* k + a little overhead
 // symbols, in any order, with duplicates ignored — which is exactly what an
 // optical link needs, because the camera will always miss some frames.
 //
-// Every encoded symbol is the XOR of a pseudorandom subset of the source
-// blocks. The subset is derived purely from the symbol's id and k, so the
-// decoder reconstructs the same subset without any side channel. Decoding is
-// belief propagation over a degree-1 "ripple".
+// This module used to carry its own copy of the encoder, the belief-propagation
+// decoder, the robust-soliton degree distribution and the seeded PRNG. That code
+// was extracted once into `drsamonline/optical-kit` (`Optical.Fountain`,
+// `Optical.Decoder`), which is vendored beside this file as `optical-kit.js`.
+// Everything here is now a thin adapter over the kit, so the repo keeps the same
+// public API while the algorithm lives in one place.
+//
+//   import { LTDecoder, encodeSymbol, splitBlocks, indicesFor, degreeFor }
+//     from './fountain.js';   // unchanged callers, unchanged behaviour
 
-import { createPRNG, xorInto } from './utils.js';
+import './optical-kit.js'; // side-effect: defines globalThis.Optical
 
-// Robust Soliton parameters. c trades overhead for a heavier tail; delta is the
-// target failure probability.
-export const DEFAULT_C = 0.03;
-export const DEFAULT_DELTA = 0.5;
+const Optical = globalThis.Optical;
 
-const CDF_CACHE = new Map();
+// The kit is session-seeded. These repos send a single transfer per stream, so a
+// fixed session keeps the symbol set deterministic and reproducible for tests.
+const SESSION = 1;
 
-/** Cumulative degree distribution (Robust Soliton) for k blocks. */
-export function degreeCDF(k, c = DEFAULT_C, delta = DEFAULT_DELTA) {
-  const key = `${k}:${c}:${delta}`;
-  const hit = CDF_CACHE.get(key);
-  if (hit) return hit;
+// The kit's robust-soliton tuning (kept exported so callers importing the old
+// constants keep compiling).
+export const DEFAULT_C = 0.1;
+export const DEFAULT_DELTA = 0.05;
 
-  const rho = new Float64Array(k + 1);
-  rho[1] = 1 / k;
-  for (let d = 2; d <= k; d++) rho[d] = 1 / (d * (d - 1));
+/** The kit's view of a set of source blocks. */
+const asFountain = (blocks) => ({
+  session: SESSION,
+  k: blocks.length,
+  blockSize: blocks[0].length,
+  blocks,
+});
 
-  const R = c * Math.log(k / delta) * Math.sqrt(k);
-  const tau = new Float64Array(k + 1);
-  const kr = Math.max(1, Math.min(k, Math.round(k / R)));
-  for (let d = 1; d < kr; d++) tau[d] = R / (d * k);
-  // R/delta < 1 for small k makes the spike term negative; clamp it, or the
-  // negative mass corrupts the distribution and inflates overhead badly.
-  tau[kr] += Math.max(0, (R * Math.log(R / delta)) / k);
-
-  const cdf = new Float64Array(k + 1);
-  let sum = 0;
-  for (let d = 1; d <= k; d++) {
-    sum += rho[d] + tau[d];
-    cdf[d] = sum;
-  }
-  for (let d = 1; d <= k; d++) cdf[d] /= sum;
-
-  CDF_CACHE.set(key, cdf);
-  return cdf;
-}
-
-/** Degree of the symbol with this id. Deterministic on both sides. */
-export function degreeFor(symbolId, k, c = DEFAULT_C, delta = DEFAULT_DELTA) {
-  if (symbolId < k) return 1; // systematic prefix
-  const cdf = degreeCDF(k, c, delta);
-  const rng = createPRNG((symbolId ^ 0x9e3779b9) >>> 0);
-  const u = rng();
-  let lo = 1;
-  let hi = k;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (cdf[mid] < u) lo = mid + 1;
-    else hi = mid;
-  }
-  return lo;
-}
-
-/** The distinct source-block indices XORed into symbol `symbolId`. */
-export function indicesFor(symbolId, k, c = DEFAULT_C, delta = DEFAULT_DELTA) {
-  // Systematic prefix: symbols 0..k-1 are the raw blocks, so a clean pass needs
-  // exactly k symbols; symbols >= k are fountain repairs for anything missed.
-  if (symbolId < k) return [symbolId];
-  const d = Math.min(k, degreeFor(symbolId, k, c, delta));
-  const rng = createPRNG((symbolId ^ 0x85ebca6b) >>> 0);
-  const picked = new Set();
-  while (picked.size < d) picked.add((rng() * k) | 0);
-  return Array.from(picked);
-}
-
-/**
- * Produce the encoded symbol for `symbolId`.
- * @param {number} symbolId
- * @param {Uint8Array[]} blocks equal-length source blocks
- */
-export function encodeSymbol(symbolId, blocks, c = DEFAULT_C, delta = DEFAULT_DELTA) {
-  const k = blocks.length;
-  const idx = indicesFor(symbolId, k, c, delta);
-  const out = Uint8Array.from(blocks[idx[0]]);
-  for (let i = 1; i < idx.length; i++) xorInto(out, blocks[idx[i]]);
-  return out;
-}
+/** Number of source blocks a payload needs at this block size. */
+export const blockCount = (length, blockSize) => Math.max(1, Math.ceil(length / blockSize));
 
 /** Split a payload into k equal-length blocks, zero-padded on the last. */
 export function splitBlocks(payload, blockSize) {
-  const k = Math.max(1, Math.ceil(payload.length / blockSize));
-  const blocks = [];
-  for (let i = 0; i < k; i++) {
-    const block = new Uint8Array(blockSize);
-    block.set(payload.subarray(i * blockSize, (i + 1) * blockSize));
-    blocks.push(block);
-  }
-  return blocks;
+  return Optical.Fountain.encode(payload, { blockSize, session: SESSION }).blocks;
 }
 
 /**
- * Belief-propagation LT decoder.
+ * The distinct source-block indices XORed into symbol `symbolId`.
+ *
+ * Derived from the kit rather than recomputed: encode `k` unit vectors and read
+ * back which ones the kit's symbol mixes. For the systematic prefix
+ * (symbolId < k) that is exactly `[symbolId]`.
+ */
+export function indicesFor(symbolId, k) {
+  const basis = [];
+  for (let i = 0; i < k; i++) {
+    const b = new Uint8Array(k);
+    b[i] = 1;
+    basis.push(b);
+  }
+  const sym = Optical.Fountain.symbol(asFountain(basis), symbolId);
+  const out = [];
+  for (let i = 0; i < k; i++) if (sym[i]) out.push(i);
+  return out.length ? out : [0];
+}
+
+/** Degree of the symbol with this id. Deterministic on both sides. */
+export function degreeFor(symbolId, k) {
+  return indicesFor(symbolId, k).length;
+}
+
+/** The encoded symbol for `symbolId`, XOR of its chosen blocks. */
+export function encodeSymbol(symbolId, blocks) {
+  return Optical.Fountain.symbol(asFountain(blocks), symbolId);
+}
+
+/**
+ * Belief-propagation LT decoder — the kit's `Optical.Decoder` behind the repo's
+ * original class shape, so existing callers and tests are untouched.
  *
  * Feed it `addSymbol(id, data)` in any order, with any number of duplicates,
- * until `complete` is true, then read `payload` (trimmed to `length`).
+ * until `complete` is true, then read `payload()` (trimmed to `length`).
  */
 export class LTDecoder {
-  constructor(k, blockSize, length, c = DEFAULT_C, delta = DEFAULT_DELTA) {
+  constructor(k, blockSize, length) {
     this.k = k;
     this.blockSize = blockSize;
     this.length = length;
-    this.c = c;
-    this.delta = delta;
-    this.blocks = new Array(k).fill(null);
-    this.resolvedCount = 0;
-    this.symbols = new Map(); // id -> { value, set }
-    this.adjacency = new Map(); // blockIndex -> Set(symbolId)
-    this.ripple = []; // symbol ids currently at degree 1
-    this.seen = new Set();
-    this.symbolsAccepted = 0;
+    this._dec = Optical.Decoder(k, blockSize, SESSION);
   }
 
   get complete() {
-    return this.resolvedCount === this.k;
+    return this._dec.progress() >= 1;
   }
 
   get progress() {
-    return this.k === 0 ? 1 : this.resolvedCount / this.k;
+    return this._dec.progress();
   }
 
-  /**
-   * Absorb one symbol.
-   * @returns {boolean} true if it was new and contributed to the ripple
-   */
+  /** Absorb one symbol. */
   addSymbol(symbolId, data) {
-    if (this.complete || this.seen.has(symbolId)) return false;
-    this.seen.add(symbolId);
-    this.symbolsAccepted++;
-
-    const value = Uint8Array.from(data);
-    const set = new Set();
-    for (const b of indicesFor(symbolId, this.k, this.c, this.delta)) {
-      if (this.blocks[b]) xorInto(value, this.blocks[b]);
-      else set.add(b);
-    }
-    if (set.size === 0) return false; // wholly redundant given what we know
-
-    this.symbols.set(symbolId, { value, set });
-    for (const b of set) {
-      let list = this.adjacency.get(b);
-      if (!list) this.adjacency.set(b, (list = new Set()));
-      list.add(symbolId);
-    }
-    if (set.size === 1) this.ripple.push(symbolId);
-    this.#propagate();
+    this._dec.add(symbolId, data);
     return true;
-  }
-
-  #propagate() {
-    while (this.ripple.length) {
-      const id = this.ripple.pop();
-      const sym = this.symbols.get(id);
-      if (!sym || sym.set.size !== 1) continue;
-      const [b] = sym.set;
-      if (this.blocks[b]) continue;
-
-      this.blocks[b] = sym.value;
-      this.resolvedCount++;
-      this.symbols.delete(id);
-
-      const neighbours = this.adjacency.get(b);
-      this.adjacency.delete(b);
-      if (!neighbours) continue;
-      for (const nid of neighbours) {
-        const ns = this.symbols.get(nid);
-        if (!ns) continue;
-        xorInto(ns.value, sym.value);
-        ns.set.delete(b);
-        if (ns.set.size === 1) this.ripple.push(nid);
-        else if (ns.set.size === 0) this.symbols.delete(nid);
-      }
-    }
   }
 
   /** Reassemble the payload. Throws if the transfer is not yet complete. */
   payload() {
     if (!this.complete) throw new Error('transfer incomplete');
-    const out = new Uint8Array(this.k * this.blockSize);
-    for (let i = 0; i < this.k; i++) out.set(this.blocks[i], i * this.blockSize);
-    return out.subarray(0, this.length);
+    return this._dec.result(this.length);
   }
 }
