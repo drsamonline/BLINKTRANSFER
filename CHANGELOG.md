@@ -9,6 +9,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - Live landing page (`docs/index.html`) and demo at `docs/play/`.
 
+### Fixed
+- Frame headers are validated on parse: a payload shorter than the blockSize it
+  claims, a totalLength larger than `k * blockSize`, or a transfer over 64 MB is
+  rejected. A crafted frame could otherwise force a ~4 GB decoder allocation.
+- Result blob URLs are revoked instead of leaked.
+
 ## [3.0.0] - 2026-10-22
 
 First release that actually transfers files end to end.
