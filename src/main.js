@@ -44,6 +44,7 @@ const state = {
   scanning: false,
   stream: null,
   received: [],
+  resultUrls: [],
   wakeLock: null,
 };
 
@@ -400,9 +401,13 @@ async function finishReceive() {
 function renderResults(files) {
   const box = $('results');
   box.hidden = false;
+  // Release the previous transfer's blob URLs before making new ones.
+  for (const url of state.resultUrls) URL.revokeObjectURL(url);
+  state.resultUrls = [];
   box.innerHTML = files
     .map((f) => {
       const url = URL.createObjectURL(new Blob([f.bytes], { type: f.type }));
+      state.resultUrls.push(url);
       return `<div class="result-row"><span class="name">${escapeHtml(f.name)}</span><span class="size">${formatSize(f.bytes.length)}</span><a href="${url}" download="${escapeHtml(f.name)}">Save</a></div>`;
     })
     .join('');
@@ -413,9 +418,11 @@ $('saveAll').addEventListener('click', () => {
   state.received.forEach((f, i) => {
     setTimeout(() => {
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([f.bytes], { type: f.type }));
+      const url = URL.createObjectURL(new Blob([f.bytes], { type: f.type }));
+      a.href = url;
       a.download = f.name;
       a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, i * 250);
   });
 });

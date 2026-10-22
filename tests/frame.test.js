@@ -47,3 +47,22 @@ test('presets and derived sizes are consistent', () => {
   assert.equal(blockCount(0, 1400), 1);
   assert.equal(blockCount(1401, 1400), 2);
 });
+
+test('frames with impossible sizes are rejected', () => {
+  const data = new Uint8Array(32);
+  const mk = (over) =>
+    packFrame({ transferId: 1, k: 2, blockSize: 32, totalLength: 40, payloadCRC: 1, symbolId: 0, data, ...over });
+
+  // totalLength larger than k * blockSize can never be a real transfer
+  assert.throws(() => parseFrame(mk({ totalLength: 5000 })), /inconsistent/);
+
+  // a header claiming more payload than the frame carries
+  assert.throws(() => parseFrame(mk().subarray(0, 30)), /truncated/);
+
+  // a crafted header asking for an enormous allocation
+  const huge = packFrame({
+    transferId: 1, k: 65535, blockSize: 65535,
+    totalLength: 200 * 1024 * 1024, payloadCRC: 1, symbolId: 0, data: new Uint8Array(65535),
+  });
+  assert.throws(() => parseFrame(huge), /oversized/);
+});

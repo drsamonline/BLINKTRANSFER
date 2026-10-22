@@ -25,6 +25,10 @@ export const MAGIC = 0xb7;
 export const VERSION = 1;
 export const HEADER_SIZE = 22;
 
+// A frame is untrusted input: bound what a header may claim, so a corrupt or
+// crafted frame cannot make the receiver allocate a huge decoder.
+export const MAX_CONTAINER = 64 * 1024 * 1024;
+
 /**
  * QR payload density presets. Bigger blocks mean fewer frames but denser,
  * harder-to-scan codes; smaller blocks scan far more reliably.
@@ -78,7 +82,13 @@ export function parseFrame(bytes) {
   const k = view.getUint16(4, false);
   const blockSize = view.getUint16(6, false);
   if (k === 0 || blockSize === 0) throw new Error('frame has an empty grid');
+  // The payload must actually carry `blockSize` bytes, and k blocks must be able
+  // to hold the container — otherwise a crafted frame could request a huge
+  // allocation in the fountain decoder.
+  if (bytes.length < HEADER_SIZE + blockSize) throw new Error('frame payload truncated');
   const totalLength = view.getUint32(8, false);
+  if (totalLength > k * blockSize) throw new Error('frame sizes are inconsistent');
+  if (totalLength > MAX_CONTAINER) throw new Error('frame declares an oversized transfer');
   const payloadCRC = view.getUint32(12, false);
   const symbolId = view.getUint32(16, false);
   if (symbolId >= k * 64 + 1024) {
