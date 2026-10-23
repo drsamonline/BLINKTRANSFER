@@ -12,7 +12,7 @@ export default [
         CompressionStream: 'readonly', DecompressionStream: 'readonly',
         Response: 'readonly', Blob: 'readonly', URL: 'readonly',
         setTimeout: 'readonly', clearTimeout: 'readonly', requestAnimationFrame: 'readonly',
-        process: 'readonly', Buffer: 'readonly',
+        process: 'readonly', Buffer: 'readonly', btoa: 'readonly', atob: 'readonly', module: 'readonly', require: 'readonly', exports: 'readonly', globalThis: 'readonly',
         TextEncoder: 'readonly', TextDecoder: 'readonly',
         ImageData: 'readonly', OffscreenCanvas: 'readonly',
       },
