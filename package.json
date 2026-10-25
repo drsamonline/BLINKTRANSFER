@@ -1,9 +1,9 @@
 {
   "name": "blinktransfer",
   "version": "3.0.0",
-  "description": "Offline file transfer over animated QR codes — rateless (fountain) coded, no network, no cables.",
+  "description": "Offline file transfer over animated QR codes \u2014 rateless (fountain) coded, no network, no cables.",
   "type": "module",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "author": "Dr Sohil Momin (https://github.com/drsamonline)",
   "homepage": "https://drsamonline.github.io/BLINKTRANSFER/",
   "repository": {

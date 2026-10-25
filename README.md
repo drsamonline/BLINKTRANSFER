@@ -142,7 +142,7 @@ what counts as commercial and how to get one (by email invoice).
 
 Third-party components and their licences are listed in [NOTICE](NOTICE).
 
-> Note: earlier versions were published under the MIT licence. That grant stands
+> Note: earlier versions were published under the PolyForm Noncommercial licence. That grant stands
 > for copies already distributed; this and future versions use the dual model
 > above.
 
