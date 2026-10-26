@@ -4,6 +4,12 @@
 
 # BlinkTransfer
 
+<!-- shot:start -->
+
+![Screenshot](docs/shot.png)
+
+<!-- shot:end -->
+
 **Send a file with light. No internet, no Bluetooth, no cables.**
 
 Animated QR codes, **rateless-coded** so a missed frame never breaks the
