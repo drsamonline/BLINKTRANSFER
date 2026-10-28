@@ -18,7 +18,7 @@
     <button class="ghost-btn" id="backBtn" hidden aria-label="Back">&#8592;</button>
     <div class="brand"><span class="brand-mark">&#9889;</span> BlinkTransfer</div>
     <a class="ghost-btn" href="https://github.com/drsamonline/BLINKTRANSFER" target="_blank" rel="noopener" aria-label="GitHub">&#9737;</a>
-  </header>
+  <button type="button" id="save-data" title="Download everything this app has saved on this device" style="font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:6px;padding:.25em .6em;margin:.5em 0;cursor:pointer;opacity:.85">Save my data</button></header>
 
   <main class="wrap">
     <!-- HOME -->
@@ -133,5 +133,21 @@ window.__smokeTest = function () {
 };
 window.addEventListener("error", function () { window.__bootError = true; });
 </script>
-</body>
+<script>
+/* Save my data - the app's own export, part of the page rather than a floating bar. */
+(function () {
+  var b = document.getElementById("save-data"); if (!b) return;
+  b.addEventListener("click", function () {
+    var out = { app: document.title, savedAt: new Date().toISOString(), data: {} };
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); out.data[k] = localStorage.getItem(k); } } catch (e) {}
+    var name = (document.title || "app").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    var blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (name || "app") + "-data-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+})();
+</script></body>
 </html>
