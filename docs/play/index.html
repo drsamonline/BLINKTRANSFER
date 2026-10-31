@@ -149,5 +149,21 @@ window.addEventListener("error", function () { window.__bootError = true; });
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   });
 })();
-</script></body>
+</script><style id="app-theme">
+  /* BLINKTRANSFER - its own palette, type and shape.
+     Keyed on data-theme so the in-app theme toggle still works; !important is
+     required because web-kit sets these as inline styles on <html>. */
+  html[data-theme="dark"]{--bg:#060e13 !important;--card:#06151d !important;--ink:#eef5f7 !important;--mut:#53859c !important;--line:#07202a !important;--acc:#519baf !important;}
+  html[data-theme="light"]{--bg:#f4f9fa !important;--card:#ffffff !important;--ink:#0b1b25 !important;--mut:#296e86 !important;--line:#ddecef !important;--acc:#0b5f76 !important;}
+  html,body{font-family:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;letter-spacing:.02em !important;
+    background-image:radial-gradient(820px 360px at 50% -170px,
+      color-mix(in srgb, var(--acc) 16%, transparent), transparent 72%) !important;
+    background-repeat:no-repeat !important;background-attachment:fixed !important}
+  button,input,textarea,select{font-family:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important}
+  button,.btn{border-radius:6px !important}
+  input,textarea,select{border-radius:4px !important}
+  .card,[class*="card"]{border-radius:8px !important}
+  button:not(.ghost):not(.tab){background:var(--acc) !important}
+</style>
+</body>
 </html>
