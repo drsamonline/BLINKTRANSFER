@@ -45,6 +45,18 @@
   footer { border-top: 1px solid var(--line); margin-top: 30px; padding: 28px 0 60px; color: var(--muted); font-size: .9rem; text-align: center; }
   footer a { color: #a5b4fc; }
   .note { color: var(--muted); font-size: .86rem; margin-top: 12px; }
+
+  /* ---------- light theme ----------
+     Added so the page reads on paper. It overrides the page's own variables and
+     nothing else — no markup, no layout, no type. */
+  :root, html {
+    color-scheme: light;
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --line: #e2ddd2;
+    --text: #14161a;
+    --muted: #5c6470;
+  }
 </style>
 </head>
 <body>
