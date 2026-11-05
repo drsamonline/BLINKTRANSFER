@@ -129,7 +129,7 @@ input[type="range"] { accent-color: var(--primary); }
 .stats dt { color: var(--muted); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .stats dd { font-weight: 700; margin-top: 2px; }
 
-.btn { border: none; border-radius: 14px; padding: 13px 18px; font-size: 1rem; font-weight: 650; cursor: pointer; color: var(--text); background: rgba(255, 255, 255, 0.08); transition: transform 0.12s, opacity 0.2s; }
+.btn { border: none; border-radius: 14px; padding: 13px 18px; font-size: 1rem; font-weight: 650; cursor: pointer; color: var(--text); background: color-mix(in srgb, var(--text) 7%, var(--surface)); transition: transform 0.12s, opacity 0.2s; }
 .btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn.primary { background: linear-gradient(135deg, var(--primary), #4f46e5); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35); }
@@ -141,7 +141,7 @@ input[type="range"] { accent-color: var(--primary); }
 #qrCanvas { width: 100%; max-width: 420px; height: auto; image-rendering: pixelated; }
 
 .progress { margin: 16px 0; }
-.bar { height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.bar { height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--text) 12%, transparent); overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--primary), #22d3ee); transition: width 0.25s; }
 .progress-meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; color: var(--muted); font-size: 0.88rem; }
 
