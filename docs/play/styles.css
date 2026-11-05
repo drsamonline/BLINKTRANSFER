@@ -14,6 +14,32 @@
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
 }
 
+
+/* ---- light theme, gated the way the landing is ------------------------- */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f7f6f2; --bg-2: #efeef6; --surface: #ffffff;
+    --line: rgba(20, 26, 48, 0.14); --text: #141a30; --muted: #5b6484;
+    --primary: #4f46e5; --primary-2: #6d28d9;
+    --green: #15803d; --red: #b91c1c; --amber: #a16207;
+    --shadow: 0 18px 50px rgba(20, 26, 48, 0.14);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1020; --bg-2: #131a33; --surface: #161d38;
+  --line: rgba(255, 255, 255, 0.09); --text: #eef2ff; --muted: #97a3c7;
+  --primary: #6366f1; --primary-2: #818cf8;
+  --green: #22c55e; --red: #ef4444; --amber: #f59e0b;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+:root[data-theme="light"] {
+  --bg: #f7f6f2; --bg-2: #efeef6; --surface: #ffffff;
+  --line: rgba(20, 26, 48, 0.14); --text: #141a30; --muted: #5b6484;
+  --primary: #4f46e5; --primary-2: #6d28d9;
+  --green: #15803d; --red: #b91c1c; --amber: #a16207;
+  --shadow: 0 18px 50px rgba(20, 26, 48, 0.14);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -140,3 +166,49 @@ input[type="range"] { accent-color: var(--primary); }
 #focusCanvas.active { display: block; }
 
 @media (max-width: 420px) { .mode-grid { grid-template-columns: 1fr; } }
+
+
+/* ---- matching the landing ------------------------------------------------ */
+
+/* the top bar was a hardcoded navy: in light mode it stayed a dark slab across
+   the top of a paper page. It follows the theme now. */
+.topbar { background: color-mix(in srgb, var(--bg) 82%, transparent); }
+.ghost-btn:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+
+/* the page glow follows the theme instead of a fixed navy */
+body {
+  background:
+    radial-gradient(46rem 26rem at 50% -12%,
+      color-mix(in srgb, var(--primary) 26%, transparent), transparent 62%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+.theme-toggle {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 11px 5px 8px; color: var(--muted);
+  font: inherit; font-size: 11.5px; line-height: 1; white-space: nowrap;
+}
+.theme-toggle:hover { color: var(--text); border-color: var(--primary); }
+.theme-toggle svg { width: 13px; height: 13px; }
+
+/* A disabled button is a state, not a fault. The old rule dropped the whole
+   control to 45% opacity, which on a gradient reads as "missing" — the same
+   trap the BlinkCode Compress bar fell into. Keep a solid surface and the
+   page's own ink instead. */
+.btn:disabled {
+  opacity: 1; cursor: not-allowed;
+  background: color-mix(in srgb, var(--text) 10%, var(--surface));
+  color: var(--text);
+  box-shadow: none;
+  border: 1px dashed color-mix(in srgb, var(--text) 38%, var(--line));
+}
+.btn.primary:disabled {
+  background: color-mix(in srgb, var(--text) 10%, var(--surface));
+  color: var(--text);
+  box-shadow: none;
+}
+
+/* the QR plate must stay white in every theme: a camera reads contrast, not taste */
+.qr-stage, #qrCanvas { background: #ffffff; }
