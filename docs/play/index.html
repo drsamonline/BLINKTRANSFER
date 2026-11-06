@@ -9,7 +9,7 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" type="image/svg+xml" href="./icon-192.svg" />
   <link rel="apple-touch-icon" href="./icon-192.svg" />
-  <link rel="stylesheet" href="./styles.css?v=7" />
+  <link rel="stylesheet" href="./styles.css?v=6" />
 </head>
 <body>
   <canvas id="focusCanvas" aria-hidden="true"></canvas>
@@ -131,7 +131,7 @@
   </main>
 
   <div class="toast" id="toast"></div>
-  <script type="module" src="./main.js?v=7"></script>
+  <script type="module" src="./main.js?v=6"></script>
 
 <style>:focus-visible{outline:2px solid currentColor;outline-offset:2px}</style>
 
@@ -212,7 +212,7 @@ window.addEventListener("error", function () { window.__bootError = true; });
 </script>
 <div id="build-stamp" style="position:fixed;right:10px;bottom:8px;z-index:5;
   font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;letter-spacing:.08em;
-  color:var(--muted);opacity:.65;pointer-events:none">v7 · 2026-11-06</div>
+  color:var(--muted);opacity:.65;pointer-events:none">v6 · 2026-11-06</div>
 
 <style id="bt-interface">
   /* BlinkTransfer's own interface. The product is a transmitter: a screen that
@@ -284,6 +284,207 @@ window.addEventListener("error", function () { window.__bootError = true; });
   /* the code stage is the point: give it room and a frame */
   #qrCanvas, .qr-stage, #showCanvas {
     border-radius: 10px; box-shadow: 0 0 0 1px var(--line), 0 26px 70px -50px var(--primary);
+  }
+</style>
+
+
+<style id="bt-win10">
+  /* ---- Windows 10, square ------------------------------------------------
+     The brief is the Fluent "square" language: no radius anywhere, flat solid
+     fills, one accent blue, Segoe UI, tiles instead of cards, and a dotted
+     focus rectangle. Gradients, glows and shadows are removed rather than
+     toned down - they are what made it look like a web page. */
+
+  :root, :root[data-theme="dark"] {
+    --bg: #1f1f1f !important;
+    --surface: #2b2b2b !important;
+    --bg-2: #262626 !important;
+    --text: #ffffff !important;
+    --muted: #c5c5c5 !important;
+    --line: #4a4a4a !important;
+    --primary: #0078d7 !important;
+    --primary-2: #005a9e !important;
+    --green: #107c10 !important;
+    --red: #e81123 !important;
+    --amber: #ffb900 !important;
+    --shadow: none !important;
+  }
+  :root[data-theme="light"] {
+    --bg: #f2f2f2 !important;
+    --surface: #ffffff !important;
+    --bg-2: #eaeaea !important;
+    --text: #000000 !important;
+    --muted: #5a5a5a !important;
+    --line: #c8c8c8 !important;
+    --primary: #0078d7 !important;
+    --primary-2: #005a9e !important;
+    --shadow: none !important;
+  }
+
+  /* square is the whole point */
+  *, *::before, *::after { border-radius: 0 !important; }
+  html, body { font-family: "Segoe UI", "Segoe UI Web (West European)", Tahoma, Arial, sans-serif !important; }
+  body { background-image: none !important; }
+  html, html[data-theme="dark"], html[data-theme="dark"] body { background-color: var(--bg) !important; }
+  html[data-theme="light"], html[data-theme="light"] body { background-color: #f2f2f2 !important; }
+
+  /* the running head is a title bar */
+  .topbar {
+    background: var(--surface) !important;
+    border-bottom: 1px solid var(--line) !important;
+    box-shadow: none !important; backdrop-filter: none !important;
+    padding: 10px 14px !important;
+  }
+  .brand { font-weight: 600 !important; letter-spacing: 0 !important; font-size: 15px !important; }
+  .brand-mark { color: var(--primary) !important; }
+  .ghost-btn {
+    border: 1px solid var(--line) !important; background: transparent !important;
+    min-width: 34px; height: 34px; border-radius: 0 !important;
+  }
+  .ghost-btn:hover { background: color-mix(in srgb, var(--text) 10%, transparent) !important; }
+  .theme-toggle { border-radius: 0 !important; border: 1px solid var(--line) !important; }
+
+  /* the console becomes a flat panel with a header strip */
+  .console {
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: var(--surface) !important;
+    box-shadow: none !important;
+  }
+  .console-top {
+    background: var(--bg-2) !important;
+    border-bottom: 1px solid var(--line) !important;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif !important;
+    letter-spacing: .02em !important; font-size: 11px !important;
+    text-transform: none !important;
+  }
+  .console-top .lamp {
+    border-radius: 0 !important; box-shadow: none !important;
+    background: var(--primary) !important; width: 8px; height: 8px;
+  }
+
+  /* the signal bars: flat accent blocks, no gradient, no animation */
+  .signal i, .signal i:nth-child(n) {
+    background: var(--primary) !important;
+    border-radius: 0 !important; opacity: 1 !important;
+    animation: none !important; transform: none !important;
+  }
+
+  /* tiles, not keys */
+  button.key:not(.ghost):not(.tab) {
+    background: var(--surface) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 20px 18px !important;
+  }
+  button.key:not(.ghost):not(.tab):hover {
+    background: color-mix(in srgb, var(--primary) 18%, var(--surface)) !important;
+    border-color: var(--primary) !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  button.key:not(.ghost):not(.tab):focus-visible {
+    outline: 1px dotted var(--text) !important; outline-offset: -4px !important;
+  }
+  .key-no { color: var(--primary) !important; font-family: "Segoe UI", Tahoma, Arial, sans-serif !important;
+            letter-spacing: .04em !important; text-transform: none !important; }
+  .key-title { font-size: 21px !important; font-weight: 600 !important; letter-spacing: 0 !important; }
+  .key-sub { color: var(--muted) !important; }
+
+  /* web-kit's own rule is button:not(.ghost):not(.tab) with !important, so the
+     flat rule has to match that specificity or the purple wins */
+  button:not(.ghost):not(.tab) {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif !important;
+  }
+  button:not(.ghost):not(.tab):hover { border-color: var(--primary) !important; }
+  #pickBtn, #startSend, button.primary:not(.ghost):not(.tab) {
+    background: var(--primary) !important; color: #ffffff !important;
+    border-color: var(--primary) !important; font-weight: 600 !important;
+  }
+  #pickBtn:hover, #startSend:hover { background: var(--primary-2) !important; }
+  #startSend:disabled, #pickBtn:disabled {
+    background: color-mix(in srgb, var(--text) 8%, var(--surface)) !important;
+    color: var(--muted) !important; border-color: var(--line) !important;
+  }
+  #save-data, .theme-toggle {
+    background: var(--surface) !important; color: var(--text) !important;
+    border: 1px solid var(--line) !important; border-radius: 0 !important;
+  }
+
+  /* every button: flat, bordered, accent when primary */
+  button, .btn {
+    border-radius: 0 !important;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif !important;
+    box-shadow: none !important;
+    border: 1px solid var(--line) !important;
+    background: var(--surface) !important;
+    color: var(--text) !important;
+  }
+  button:hover, .btn:hover { border-color: var(--primary) !important; }
+  .btn.primary, button.primary {
+    background: var(--primary) !important; color: #ffffff !important;
+    border-color: var(--primary) !important; font-weight: 600 !important;
+  }
+  .btn.primary:hover, button.primary:hover { background: var(--primary-2) !important;
+    border-color: var(--primary-2) !important; }
+  .btn:disabled, button:disabled {
+    background: color-mix(in srgb, var(--text) 8%, var(--surface)) !important;
+    color: var(--muted) !important; border: 1px solid var(--line) !important; opacity: 1 !important;
+  }
+  button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 1px dotted var(--text) !important; outline-offset: -4px !important;
+  }
+
+  /* form controls: Windows 10 fields */
+  input, select, textarea {
+    border-radius: 0 !important;
+    border: 1px solid var(--line) !important;
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif !important;
+    padding: 7px 9px !important;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--primary) !important; }
+  input[type="range"] { padding: 0 !important; border: 0 !important; background: transparent !important; }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px; background: var(--line); border-radius: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 12px; height: 20px; margin-top: -8px;
+    background: var(--primary); border-radius: 0; border: 0;
+  }
+  input[type="checkbox"] { width: 16px; height: 16px; border-radius: 0 !important; accent-color: var(--primary); }
+
+  /* panels: a 1px frame, a header, no shadow */
+  .card, [class*="card"], .dropzone, .qr-stage, #qrCanvas {
+    border-radius: 0 !important; box-shadow: none !important;
+    border: 1px solid var(--line) !important; background: var(--surface) !important;
+  }
+  .dropzone { border-style: dashed !important; }
+  .dropzone:hover { border-color: var(--primary) !important; background: var(--surface) !important; }
+  .card h3, .field > span, label { font-weight: 600 !important; letter-spacing: 0 !important; }
+
+  /* the facts list reads as a Windows details pane */
+  .facts { border-top: 1px solid var(--line) !important; border-bottom: 1px solid var(--line) !important;
+           background: var(--surface) !important; margin-top: 14px !important; padding: 0 !important; }
+  .facts li { border-bottom: 1px solid var(--line) !important; padding: 9px 12px !important; }
+  .facts li:last-child { border-bottom: 0 !important; }
+  .facts li strong { min-width: 96px; font-weight: 600 !important; }
+  .facts li span { color: var(--muted) !important; }
+
+  /* the stamp becomes a status bar */
+  #build-stamp {
+    background: var(--surface) !important; color: var(--muted) !important;
+    border-top: 1px solid var(--line) !important; left: 0 !important; right: 0 !important;
+    bottom: 0 !important; padding: 4px 12px !important; opacity: 1 !important;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif !important; font-size: 11px !important;
+    letter-spacing: .02em !important;
   }
 </style>
 
