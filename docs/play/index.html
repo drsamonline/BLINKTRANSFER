@@ -180,8 +180,11 @@ window.addEventListener("error", function () { window.__bootError = true; });
     root.setAttribute('data-theme', dark ? 'dark' : 'light');
     label.textContent = dark ? 'Dark' : 'Light';
   }
+  // The landing is dark, and the app is the same product: it opens dark unless
+  // you have chosen otherwise. Following the OS here made the app and the page
+  // that introduces it look like two different products.
   var stored = localStorage.getItem(KEY);
-  paint(stored || 'system');
+  paint(stored || 'dark');
   if (!stored) root.removeAttribute('data-theme');
   btn.addEventListener('click', function () {
     var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
@@ -192,5 +195,8 @@ window.addEventListener("error", function () { window.__bootError = true; });
   });
 })();
 </script>
+<div id="build-stamp" style="position:fixed;right:10px;bottom:8px;z-index:5;
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;letter-spacing:.08em;
+  color:var(--muted);opacity:.65;pointer-events:none">v5 · 2026-11-06</div>
 </body>
 </html>
