@@ -9,7 +9,7 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" type="image/svg+xml" href="./icon-192.svg" />
   <link rel="apple-touch-icon" href="./icon-192.svg" />
-  <link rel="stylesheet" href="./styles.css?v=6" />
+  <link rel="stylesheet" href="./styles.css?v=7" />
 </head>
 <body>
   <canvas id="focusCanvas" aria-hidden="true"></canvas>
@@ -29,20 +29,33 @@
   <main class="wrap">
     <!-- HOME -->
     <section id="screen-home" class="screen active">
-      <h1 class="hero">Send a file<br /><span>with light.</span></h1>
-      <p class="lede">Animated QR codes, rateless-coded so a missed frame never breaks the transfer. Completely offline.</p>
+      <div class="console">
+        <div class="console-top">
+          <span class="lamp"></span>
+          <span class="readout">transmitter · offline</span>
+          <span class="readout right">rateless</span>
+        </div>
 
-      <div class="mode-grid">
-        <button class="mode-card send" id="goSend">
-          <span class="mode-icon">&#8679;</span>
-          <span class="mode-title">Send</span>
-          <span class="mode-sub">Pick files, show the code</span>
-        </button>
-        <button class="mode-card receive" id="goReceive">
-          <span class="mode-icon">&#8681;</span>
-          <span class="mode-title">Receive</span>
-          <span class="mode-sub">Point a camera at the code</span>
-        </button>
+        <h1 class="hero">Send a file<br /><span>with light.</span></h1>
+        <p class="lede">Animated QR codes, rateless-coded so a missed frame never breaks the
+        transfer. Completely offline.</p>
+
+        <div class="signal" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+
+        <div class="keys">
+          <button class="key send" id="goSend">
+            <span class="key-no">A</span>
+            <span class="key-title">Send</span>
+            <span class="key-sub">Pick files, show the code</span>
+          </button>
+          <button class="key receive" id="goReceive">
+            <span class="key-no">B</span>
+            <span class="key-title">Receive</span>
+            <span class="key-sub">Point a camera at the code</span>
+          </button>
+        </div>
       </div>
 
       <ul class="facts">
@@ -118,7 +131,7 @@
   </main>
 
   <div class="toast" id="toast"></div>
-  <script type="module" src="./main.js?v=6"></script>
+  <script type="module" src="./main.js?v=7"></script>
 
 <style>:focus-visible{outline:2px solid currentColor;outline-offset:2px}</style>
 
@@ -199,6 +212,80 @@ window.addEventListener("error", function () { window.__bootError = true; });
 </script>
 <div id="build-stamp" style="position:fixed;right:10px;bottom:8px;z-index:5;
   font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;letter-spacing:.08em;
-  color:var(--muted);opacity:.65;pointer-events:none">v6 · 2026-11-06</div>
+  color:var(--muted);opacity:.65;pointer-events:none">v7 · 2026-11-06</div>
+
+<style id="bt-interface">
+  /* BlinkTransfer's own interface. The product is a transmitter: a screen that
+     shows a code and someone pointing a camera at it. So the app is laid out
+     like hardware - a lit panel, a signal readout, and two keys - rather than a
+     stack of cards with a heading on top. */
+
+  .console { border: 1px solid var(--line); border-radius: 14px; padding: 0 0 22px;
+             background: linear-gradient(180deg,
+               color-mix(in srgb, var(--primary) 9%, var(--surface)), var(--surface) 62%);
+             box-shadow: 0 30px 80px -60px var(--primary); overflow: hidden; }
+
+  .console-top { display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+                 border-bottom: 1px solid var(--line); font-family: ui-monospace, Menlo, Consolas, monospace;
+                 font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .console-top .lamp { width: 7px; height: 7px; border-radius: 50%; background: var(--primary);
+                       box-shadow: 0 0 10px 1px var(--primary); }
+  .console-top .right { margin-left: auto; }
+  .readout { color: var(--muted); }
+
+  .console .hero { margin: 22px 18px 0; }
+  .console .lede { margin: 12px 18px 0; }
+
+  /* the signal: twelve bars that breathe, because the app sends a loop */
+  .signal { display: flex; align-items: flex-end; gap: 4px; height: 46px; margin: 22px 18px 0;
+            padding: 0 0 0 0; }
+  .signal i { flex: 1; background: linear-gradient(180deg, var(--primary-2), var(--primary));
+              border-radius: 2px 2px 0 0; opacity: .9; height: 14px; align-self: flex-end; }
+  .signal i:nth-child(2n) { height: 30px; }
+  .signal i:nth-child(3n) { height: 20px; }
+  .signal i:nth-child(4n) { height: 38px; }
+  .signal i:nth-child(5n) { height: 26px; }
+  .signal i:nth-child(7n) { height: 42px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .signal i { animation: pulse 2.4s ease-in-out infinite alternate; transform-origin: bottom; }
+    .signal i:nth-child(2n) { animation-duration: 3.1s; }
+    .signal i:nth-child(3n) { animation-duration: 2.0s; }
+    .signal i:nth-child(5n) { animation-duration: 3.6s; }
+    @keyframes pulse { from { transform: scaleY(.45); } to { transform: scaleY(1); } }
+  }
+
+  /* two keys, not two cards */
+  .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 18px 0; }
+  @media (max-width: 520px) { .keys { grid-template-columns: 1fr; } }
+  /* web-kit paints every button with the accent and !important, so a key has to
+     out-specify that rule to stay an outline */
+  button.key:not(.ghost):not(.tab) {
+         position: relative; text-align: left; padding: 18px 16px 16px; cursor: pointer;
+         background: color-mix(in srgb, var(--text) 5%, var(--surface)) !important;
+         border: 1px solid var(--line); border-radius: 10px; color: var(--text);
+         display: flex; flex-direction: column; gap: 3px;
+         transition: border-color .15s, transform .12s, box-shadow .15s; }
+  button.key:not(.ghost):not(.tab):hover { transform: translateY(-2px);
+               border-color: var(--primary) !important;
+               background: color-mix(in srgb, var(--primary) 10%, var(--surface)) !important;
+               box-shadow: 0 16px 40px -30px var(--primary); }
+  .key-no { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; letter-spacing: .16em;
+            color: var(--primary); }
+  .key-title { font-size: 20px; font-weight: 650; letter-spacing: -.02em; }
+  .key-sub { font-size: 13px; color: var(--muted); }
+  .key.receive .key-no { color: var(--primary-2); }
+
+  /* the send screen becomes a two-column console on a wide screen */
+  @media (min-width: 860px) {
+    #screen-send { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; align-items: start; }
+    #screen-send.active { display: grid; }
+    #screen-send .card:first-child { grid-row: span 2; }
+  }
+  /* the code stage is the point: give it room and a frame */
+  #qrCanvas, .qr-stage, #showCanvas {
+    border-radius: 10px; box-shadow: 0 0 0 1px var(--line), 0 26px 70px -50px var(--primary);
+  }
+</style>
+
 </body>
 </html>
