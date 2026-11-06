@@ -212,3 +212,49 @@ body {
 
 /* the QR plate must stay white in every theme: a camera reads contrast, not taste */
 .qr-stage, #qrCanvas { background: #ffffff; }
+
+
+/* ---- the home screen, in the same language as the rest ---------------------
+   The send screen became cards and tiles; the home screen was still web-kit's
+   rounded pair. Same treatment here, so the app looks like one design. */
+
+.hero { letter-spacing: -.03em; }
+/* gradient text needs the text-fill property as well as the clip, or the glyphs
+   render transparent and the line disappears entirely */
+.hero span {
+  background: linear-gradient(92deg, var(--primary-2), var(--primary));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: var(--primary-2);
+}
+
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 26px 0 20px; }
+@media (max-width: 520px) { .mode-grid { grid-template-columns: 1fr; } }
+
+.mode-card {
+  position: relative; text-align: left; padding: 22px 20px 20px;
+  background: color-mix(in srgb, var(--text) 4%, var(--surface));
+  border: 1px solid var(--line); border-radius: 14px; color: var(--text);
+  display: flex; flex-direction: column; gap: 5px; cursor: pointer;
+  transition: border-color .15s, transform .12s, background .15s;
+}
+.mode-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+.mode-card::after {
+  content: ''; position: absolute; right: 12px; top: 12px; width: 10px; height: 10px;
+  border-right: 1px solid var(--primary); border-top: 1px solid var(--primary); opacity: .55;
+}
+.mode-icon { font-size: 20px; line-height: 1; color: var(--primary-2); }
+.mode-card.receive .mode-icon { color: var(--primary); }
+.mode-title { font-size: 21px; font-weight: 650; letter-spacing: -.02em; }
+.mode-sub { font-size: 13.5px; color: var(--muted); }
+
+/* the three facts under them read as a rail, not as three more cards */
+.facts, .fact-list { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  padding: 12px 0; margin: 0; list-style: none; }
+.facts li, .fact-list li {
+  display: flex; align-items: baseline; gap: 12px; padding: 7px 0; font-size: 14px;
+  background: transparent !important; border: 0 !important; border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.facts li + li, .fact-list li + li { border-top: 1px solid var(--line) !important; }
+.facts li strong, .fact-list li strong { min-width: 96px; font-weight: 650; }
+.facts li span, .fact-list li span { color: var(--muted); }
