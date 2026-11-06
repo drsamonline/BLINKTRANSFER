@@ -515,6 +515,11 @@ window.addEventListener("error", function () { window.__bootError = true; });
         </ul>
         <p class="sp-foot">No accounts, no tracking, nothing here loads from the network.
         A thank-you is a thank-you; nothing is gated behind it.</p>
+        <div class="sp-export">
+          <button type="button" id="save-data"
+                  title="Download everything this app has saved on this device">Export my data</button>
+          <span>Your files, settings and history as one JSON file. Nothing is uploaded.</span>
+        </div>
       </div>
     </div>
   </div>
@@ -570,6 +575,10 @@ window.addEventListener("error", function () { window.__bootError = true; });
   .sp-links a:hover { text-decoration: underline; }
   .sp-links span { color: var(--muted); }
   .sp-foot { margin: 0; color: var(--muted); font-size: 12px; }
+  .sp-export { display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+               margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  #save-data { padding: 5px 10px; cursor: pointer; font-size: 12.5px; }
+  .sp-export span { color: var(--muted); font-size: 11.5px; flex: 1; min-width: 180px; }
 </style>
 </body>
 </html>
