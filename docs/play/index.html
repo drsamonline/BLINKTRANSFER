@@ -9,7 +9,7 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" type="image/svg+xml" href="./icon-192.svg" />
   <link rel="apple-touch-icon" href="./icon-192.svg" />
-  <link rel="stylesheet" href="./styles.css?v=5" />
+  <link rel="stylesheet" href="./styles.css?v=6" />
 </head>
 <body>
   <canvas id="focusCanvas" aria-hidden="true"></canvas>
@@ -118,7 +118,7 @@
   </main>
 
   <div class="toast" id="toast"></div>
-  <script type="module" src="./main.js?v=5"></script>
+  <script type="module" src="./main.js?v=6"></script>
 
 <style>:focus-visible{outline:2px solid currentColor;outline-offset:2px}</style>
 
@@ -159,8 +159,8 @@ window.addEventListener("error", function () { window.__bootError = true; });
   /* BLINKTRANSFER - its own palette, type and shape.
      Keyed on data-theme so the in-app theme toggle still works; !important is
      required because web-kit sets these as inline styles on <html>. */
-  html[data-theme="dark"]{--bg:#060e13 !important;--card:#06151d !important;--ink:#eef5f7 !important;--mut:#53859c !important;--line:#07202a !important;--acc:#519baf !important;}
-  html[data-theme="light"]{--bg:#f4f9fa !important;--card:#ffffff !important;--ink:#0b1b25 !important;--mut:#296e86 !important;--line:#ddecef !important;--acc:#0b5f76 !important;}
+  html[data-theme="dark"]{--bg:#0b1020 !important;--card:#161d38 !important;--ink:#eef2ff !important;--mut:#b6c0d8 !important;--line:rgba(238,242,255,.22) !important;--acc:#818cf8 !important;}
+  html[data-theme="light"]{--bg:#f7f6f2 !important;--card:#ffffff !important;--ink:#141a30 !important;--mut:#4a5468 !important;--line:rgba(20,26,48,.20) !important;--acc:#4f46e5 !important;}
   html,body{font-family:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;letter-spacing:.02em !important;
     background-image:radial-gradient(820px 360px at 50% -170px,
       color-mix(in srgb, var(--acc) 16%, transparent), transparent 72%) !important;
@@ -184,8 +184,10 @@ window.addEventListener("error", function () { window.__bootError = true; });
   // you have chosen otherwise. Following the OS here made the app and the page
   // that introduces it look like two different products.
   var stored = localStorage.getItem(KEY);
+  // No removeAttribute here: that line came from pages whose default is the
+  // system preference, and on this app it undid the dark default on the next
+  // line, leaving data-theme unset and the light media query in charge.
   paint(stored || 'dark');
-  if (!stored) root.removeAttribute('data-theme');
   btn.addEventListener('click', function () {
     var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     localStorage.setItem(KEY, next); paint(next);
@@ -197,6 +199,6 @@ window.addEventListener("error", function () { window.__bootError = true; });
 </script>
 <div id="build-stamp" style="position:fixed;right:10px;bottom:8px;z-index:5;
   font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;letter-spacing:.08em;
-  color:var(--muted);opacity:.65;pointer-events:none">v5 · 2026-11-06</div>
+  color:var(--muted);opacity:.65;pointer-events:none">v6 · 2026-11-06</div>
 </body>
 </html>
