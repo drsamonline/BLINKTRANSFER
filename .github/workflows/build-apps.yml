@@ -31,12 +31,12 @@ permissions:
   id-token: write
 
 concurrency:
-  # A run has been stuck in `Deploy the demo` since 2026-11-05T18:56 and, under a
-  # single shared group, every later run queued behind it forever. A per-run group
-  # lets a fresh build and deploy start; it can be narrowed back to `build` once
-  # the stuck run is cleared from the Actions tab.
-  group: build-${{ github.run_id }}
-  cancel-in-progress: false
+  # One build at a time per repository. This was briefly a per-run group while a
+  # run was wedged in `Deploy the demo` and blocking every later run; that run has
+  # been cancelled, so the single group is restored and a new push now supersedes
+  # an in-flight build instead of running two binary builds at once.
+  group: build
+  cancel-in-progress: true
 
 jobs:
   app:
