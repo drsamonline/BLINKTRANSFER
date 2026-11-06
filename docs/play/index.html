@@ -24,7 +24,9 @@
       </svg>
       <span id="theme-label">Light</span>
     </button>
-  <button type="button" id="save-data" title="Download everything this app has saved on this device" style="font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:6px;padding:.25em .6em;margin:.5em 0;cursor:pointer;opacity:.85">Save my data</button></header>
+  <button type="button" id="support-btn" aria-haspopup="dialog" aria-controls="support-panel"
+          title="Ways to support this work">Support</button>
+  </header>
 
   <main class="wrap">
     <!-- HOME -->
@@ -488,5 +490,86 @@ window.addEventListener("error", function () { window.__bootError = true; });
   }
 </style>
 
+
+<div id="support-panel" role="dialog" aria-modal="true" aria-labelledby="support-title" hidden>
+  <div class="sp-sheet">
+    <div class="sp-bar">
+      <span id="support-title">Support this work</span>
+      <button type="button" id="support-close" aria-label="Close">&#10005;</button>
+    </div>
+    <div class="sp-body">
+      <div class="sp-id">
+        <img src="../assets/support-portrait.jpg" alt="Dr Sohil Momin" width="72" height="72">
+        <img src="../assets/upi-qr.svg" alt="UPI payment QR - open amount" width="72" height="72">
+      </div>
+      <div class="sp-copy">
+        <p class="sp-lede">Free, offline and accountless. If it earned its keep, there are a few
+        ways to say so &mdash; pick whichever is easiest where you are.</p>
+        <p class="sp-upi"><b>UPI</b> <code>drsohilboi@ybl</code></p>
+        <ul class="sp-links">
+          <li><a href="https://ko-fi.com/matneo" target="_blank" rel="noopener">Ko-fi</a><span>one-off tip, no account</span></li>
+          <li><a href="https://paypal.me/drsohilmomin?locale.x=en_GB&amp;country.x=IN" target="_blank" rel="noopener">PayPal</a><span>outside India, or a card</span></li>
+          <li><a href="https://www.amazon.com/stores/author/B08ZT331LY/allbooks?ccs_id=aed72b9f-71d9-41dc-adee-e9368a317acc" target="_blank" rel="noopener">My books</a><span>the author store</span></li>
+          <li><a href="https://drsamonline.github.io/" target="_blank" rel="noopener">All projects</a><span>the rest of the estate</span></li>
+          <li><a href="mailto:sohilmomin2000@gmail.com">Say hello</a><span>bugs, corrections, requests</span></li>
+        </ul>
+        <p class="sp-foot">No accounts, no tracking, nothing here loads from the network.
+        A thank-you is a thank-you; nothing is gated behind it.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var panel = document.getElementById('support-panel');
+  var open = document.getElementById('support-btn');
+  var close = document.getElementById('support-close');
+  if (!panel || !open) return;
+  function show() { panel.hidden = false; close.focus(); }
+  function hide() { panel.hidden = true; open.focus(); }
+  open.addEventListener('click', show);
+  close.addEventListener('click', hide);
+  panel.addEventListener('click', function (e) { if (e.target === panel) hide(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !panel.hidden) hide();
+  });
+})();
+</script>
+
+<style id="bt-support">
+  /* ---- the support dialog: Windows 10 square ----------------------------- */
+  #support-btn { margin-left: 6px; padding: 6px 12px; cursor: pointer; }
+  #support-panel { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
+                   padding: 20px; background: rgba(0,0,0,.55); }
+  #support-panel[hidden] { display: none; }
+  .sp-sheet { width: min(560px, 100%); max-height: 86vh; overflow: auto;
+              background: var(--surface); color: var(--text);
+              border: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+  .sp-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+            background: var(--bg-2); border-bottom: 1px solid var(--line);
+            font-weight: 600; font-size: 14px; }
+  #support-close { margin-left: auto; width: 30px; height: 30px; cursor: pointer; line-height: 1;
+                   background: transparent !important; color: var(--text) !important;
+                   border: 1px solid transparent !important; font-size: 13px; }
+  #support-close:hover { background: #e81123 !important; color: #fff !important;
+                         border-color: #e81123 !important; }
+  .sp-body { display: grid; grid-template-columns: 84px 1fr; gap: 16px; padding: 16px 18px 18px; }
+  @media (max-width: 520px) { .sp-body { grid-template-columns: 1fr; } }
+  .sp-id { display: grid; gap: 10px; align-content: start; }
+  .sp-id img { border: 1px solid var(--line); border-radius: 0; background: #fff; }
+  .sp-lede { margin: 0 0 10px; color: var(--muted); font-size: 13.5px; }
+  .sp-upi { margin: 0 0 10px; font-size: 13.5px; }
+  .sp-upi b { display: inline-block; min-width: 34px; color: var(--muted); font-weight: 600; }
+  .sp-upi code { background: var(--bg-2); border: 1px solid var(--line); padding: 1px 6px;
+                 font-family: ui-monospace, Consolas, monospace; }
+  .sp-links { list-style: none; margin: 0 0 10px; padding: 0; border-top: 1px solid var(--line); }
+  .sp-links li { display: flex; align-items: baseline; gap: 10px; padding: 7px 0;
+                 border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .sp-links a { color: var(--primary); text-decoration: none; font-weight: 600; min-width: 96px; }
+  .sp-links a:hover { text-decoration: underline; }
+  .sp-links span { color: var(--muted); }
+  .sp-foot { margin: 0; color: var(--muted); font-size: 12px; }
+</style>
 </body>
 </html>
