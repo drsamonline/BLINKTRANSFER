@@ -17,28 +17,10 @@
 
 /* ---- light theme, gated the way the landing is ------------------------- */
 @media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f7f6f2; --bg-2: #efeef6; --surface: #ffffff;
-    --line: rgba(20, 26, 48, 0.14); --text: #141a30; --muted: #5b6484;
-    --primary: #4f46e5; --primary-2: #6d28d9;
-    --green: #15803d; --red: #b91c1c; --amber: #a16207;
-    --shadow: 0 18px 50px rgba(20, 26, 48, 0.14);
-  }
+  :root:not([data-theme]) { --bg: #f7f6f2 !important; --surface: #ffffff !important; --text: #141a30 !important; --muted: #4a5468 !important; --line: rgba(20,26,48,0.20) !important; --primary: #4f46e5 !important; --primary-2: #6d28d9 !important; }
 }
-:root[data-theme="dark"] {
-  --bg: #0b1020; --bg-2: #131a33; --surface: #161d38;
-  --line: rgba(255, 255, 255, 0.09); --text: #eef2ff; --muted: #97a3c7;
-  --primary: #6366f1; --primary-2: #818cf8;
-  --green: #22c55e; --red: #ef4444; --amber: #f59e0b;
-  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
-}
-:root[data-theme="light"] {
-  --bg: #f7f6f2; --bg-2: #efeef6; --surface: #ffffff;
-  --line: rgba(20, 26, 48, 0.14); --text: #141a30; --muted: #5b6484;
-  --primary: #4f46e5; --primary-2: #6d28d9;
-  --green: #15803d; --red: #b91c1c; --amber: #a16207;
-  --shadow: 0 18px 50px rgba(20, 26, 48, 0.14);
-}
+:root[data-theme="dark"] { --bg: #0b1020 !important; --bg-2: #131a33 !important; --surface: #161d38 !important; --line: rgba(255, 255, 255, 0.09) !important; --text: #eef2ff !important; --muted: #97a3c7 !important; --primary: #6366f1 !important; --primary-2: #818cf8 !important; --green: #22c55e !important; --red: #ef4444 !important; --amber: #f59e0b !important; --shadow: 0 18px 50px rgba(0, 0, 0, 0.45) !important }
+:root[data-theme="light"] { --bg: #f7f6f2 !important; --bg-2: #efeef6 !important; --surface: #ffffff !important; --line: rgba(20, 26, 48, 0.14) !important; --text: #141a30 !important; --muted: #5b6484 !important; --primary: #4f46e5 !important; --primary-2: #6d28d9 !important; --green: #15803d !important; --red: #b91c1c !important; --amber: #a16207 !important; --shadow: 0 18px 50px rgba(20, 26, 48, 0.14) !important }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -258,3 +240,75 @@ body {
 .facts li + li, .fact-list li + li { border-top: 1px solid var(--line) !important; }
 .facts li strong, .fact-list li strong { min-width: 96px; font-weight: 650; }
 .facts li span, .fact-list li span { color: var(--muted); }
+
+
+
+
+/* ---- theme ----------------------------------------------------------------
+   One block, in one order. web-kit writes --bg/--surface/--text as inline styles
+   on <html>, so every palette declaration carries !important; and the light media
+   query is scoped to :root:not([data-theme]) so it can never fight an explicit
+   choice. Three earlier versions of this block leaked a bare `:root` rule over the
+   dark palette, which is why the toggle changed its label and nothing else. */
+
+:root, :root[data-theme="dark"] {
+  --bg: #0b1020 !important;
+  --bg-2: #131a33 !important;
+  --surface: #161d38 !important;
+  --text: #eef2ff !important;
+  --muted: #b6c0d8 !important;
+  --line: rgba(238, 242, 255, 0.22) !important;
+  --primary: #818cf8 !important;
+  --primary-2: #a78bfa !important;
+  --green: #22c55e !important;
+  --red: #ef4444 !important;
+  --amber: #f59e0b !important;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #f7f6f2 !important; --bg-2: #efeef6 !important; --surface: #ffffff !important;
+    --text: #141a30 !important; --muted: #4a5468 !important;
+    --line: rgba(20, 26, 48, 0.20) !important;
+    --primary: #4f46e5 !important; --primary-2: #6d28d9 !important;
+  }
+}
+
+:root[data-theme="light"] {
+  --bg: #f7f6f2 !important; --bg-2: #efeef6 !important; --surface: #ffffff !important;
+  --text: #141a30 !important; --muted: #4a5468 !important;
+  --line: rgba(20, 26, 48, 0.20) !important;
+  --primary: #4f46e5 !important; --primary-2: #6d28d9 !important;
+  --green: #15803d !important; --red: #b91c1c !important; --amber: #a16207 !important;
+  --shadow: 0 18px 50px rgba(20, 26, 48, 0.14) !important;
+}
+
+/* the page surface itself, not just the variables */
+html, html[data-theme="dark"], html[data-theme="dark"] body {
+  background-color: var(--bg) !important; color: var(--text) !important;
+}
+html[data-theme="light"], html[data-theme="light"] body {
+  background-color: #f7f6f2 !important; color: #141a30 !important;
+}
+
+/* controls: an edge you can see, and a fill that is not the card */
+.btn:not(.primary):not(.danger) {
+  border: 1px solid var(--line) !important;
+  color: var(--text) !important;
+  background: color-mix(in srgb, var(--text) 9%, var(--surface)) !important;
+}
+.btn.primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-2)) !important;
+  color: #ffffff !important; font-weight: 650 !important; border: 0 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,.30);
+}
+.btn:disabled {
+  background: color-mix(in srgb, var(--text) 12%, var(--surface)) !important;
+  color: var(--text) !important; border: 1px dashed var(--line) !important; opacity: 1 !important;
+}
+select, input, textarea {
+  background: color-mix(in srgb, var(--text) 7%, var(--surface)) !important;
+  color: var(--text) !important; border: 1px solid var(--line) !important;
+}
+label, .field > span, .card h3 { color: var(--text) !important; font-weight: 600 !important; }
