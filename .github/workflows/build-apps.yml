@@ -49,3 +49,6 @@ jobs:
       contents: write
       pages: write
       id-token: write
+      actions: write    # the called workflow's `shot` job dispatches the run that
+                        # publishes the screenshot; a caller that withholds this
+                        # fails the whole run at startup, zero jobs, no log
